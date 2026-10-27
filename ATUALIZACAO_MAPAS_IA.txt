@@ -1,0 +1,16 @@
+SUBWAY RUN v12 - OPÇÃO CRIAR MAPAS COM IA NO MENU PRINCIPAL
+
+- Adicionado botão “🤖 CRIAR MAPAS COM IA” no menu principal.
+- Tela com campo para descrever o mapa, créditos e resultado JSON.
+- Endpoint de servidor /api/maps/generate usando Groq com GROQ_API_KEY configurada como segredo do servidor.
+- O servidor atribui 200 créditos por jogador e cobra 25 por geração válida; créditos não são confiados ao navegador.
+- Mapas gerados são armazenados como pendentes para revisão, sem tocar nos recordes oficiais.
+- Validação de estrutura, pistas, obstáculos e moedas no servidor.
+
+CONFIGURAÇÃO NECESSÁRIA
+1. Configure GROQ_API_KEY como segredo/variável de ambiente do servidor (Cloudflare Worker secret ou equivalente). Não coloque a chave em app.js, index.html ou localStorage público.
+2. Publique o server.js atualizado.
+3. Jogadores precisam entrar numa conta conectada ao servidor para gerar mapas.
+
+LIMITAÇÃO HONESTA
+Esta versão já mostra a opção no menu e gera/escreve a especificação do mapa. A reprodução jogável desse JSON como pista 3D personalizada e a tela administrativa completa para aprovar/rejeitar os mapas ainda precisam de integração adicional; a geração não altera o ranking oficial.

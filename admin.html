@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="robots" content="noindex,nofollow"/>
+<meta name="theme-color" content="#080d1b"/>
+<title>Subway Run · Painel Administrativo</title>
+<style>
+:root{--bg:#070b19;--panel:#10172e;--panel2:#162043;--line:#2a3873;--tx:#eef3ff;--mut:#9fb0dd;--y:#ffd21f;--c:#4ff0ff;--p:#ff5c8a;--g:#2ee59d;--r:#ff5468;--rad:16px}
+*{box-sizing:border-box}html,body{margin:0;background:radial-gradient(120% 80% at 50% -10%,#1b2a6b 0%,#0a1030 45%,var(--bg) 100%) fixed;color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+.hide{display:none!important}
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.lbox{width:min(420px,100%);background:linear-gradient(160deg,#172251,#0d1432);border:1px solid var(--line);border-radius:22px;padding:28px 24px;box-shadow:0 20px 60px #0008}
+.lbox h1{margin:0 0 4px;font-size:26px;letter-spacing:.04em;color:var(--y)}.lbox p{margin:0 0 18px;color:var(--mut)}
+label.f{display:block;margin:10px 0 4px;font-size:12px;letter-spacing:.08em;color:var(--mut);text-transform:uppercase;font-weight:700}
+input,select,textarea{width:100%;background:#0a1030;border:1px solid var(--line);border-radius:12px;padding:11px 13px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--c);box-shadow:0 0 0 3px #4ff0ff22}
+textarea{resize:vertical;min-height:90px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer;background:linear-gradient(180deg,#ffe36a,#ffb81f);color:#2a1d00;transition:transform .08s,filter .15s}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:translateY(1px)}.btn[disabled]{opacity:.5;pointer-events:none}
+.btn.g{background:#1d2a5c;color:var(--tx);border:1px solid var(--line)}.btn.r{background:linear-gradient(180deg,#ff7a8a,#e03348);color:#fff}.btn.ok{background:linear-gradient(180deg,#5af2b6,#16b57a);color:#04281b}.btn.s{padding:6px 11px;font-size:12.5px;border-radius:10px}
+.err{color:var(--r);min-height:20px;margin-top:10px;font-size:13.5px}
+header{position:sticky;top:0;z-index:20;background:#0a1030ee;backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 14px 10px}
+.top{display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto}.top b{font-size:17px;color:var(--y);letter-spacing:.04em}.top span{flex:1;color:var(--mut);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav{display:flex;gap:6px;max-width:1100px;margin:10px auto 0;overflow-x:auto;padding-bottom:2px}
+nav button{flex:none;border:1px solid var(--line);background:#121a3d;color:var(--mut);border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;white-space:nowrap}
+nav button.on{background:linear-gradient(180deg,#4ff0ff,#2aa8d8);color:#02202b;border-color:transparent}
+main{max-width:1100px;margin:0 auto;padding:16px 14px calc(40px + env(safe-area-inset-bottom))}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.card{background:linear-gradient(160deg,#141e46,#0e1535);border:1px solid var(--line);border-radius:var(--rad);padding:16px}
+.stat b{display:block;font-size:30px;line-height:1.1;color:var(--y)}.stat span{color:var(--mut);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase}
+.stat.on b{color:var(--g)}.stat.off b{color:var(--mut)}.stat.bad b{color:var(--r)}
+h2{margin:22px 0 10px;font-size:18px}h2:first-child{margin-top:0}h3{margin:0 0 8px;font-size:15px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.row>*{flex:1 1 140px}.row>.btn{flex:0 0 auto}
+.muted{color:var(--mut);font-size:13px}.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:800;background:#1d2a5c}
+.pill.on{background:#12503a;color:#7dffc4}.pill.off{background:#2a2f4a;color:#9aa3c7}.pill.ban{background:#5a1e2b;color:#ff9aa8}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--rad)}table{width:100%;border-collapse:collapse;min-width:620px}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid #212c63;font-size:13.5px;white-space:nowrap}th{color:var(--mut);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;background:#0f1738}
+tr:last-child td{border-bottom:0}td .btn{margin-right:4px}
+.av{width:30px;height:30px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;background:#26357a;display:inline-flex;align-items:center;justify-content:center;font-size:15px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0b1230;border:1px solid var(--c);color:var(--tx);padding:11px 18px;border-radius:14px;z-index:99;max-width:92vw;box-shadow:0 10px 40px #000a;transition:opacity .25s;opacity:0;pointer-events:none}
+#toast.show{opacity:1}#toast.bad{border-color:var(--r)}
+.warn{padding:10px 13px;border-radius:12px;background:#ffb81f1a;border:1px solid #ffb81f66;color:#ffe29a;font-size:13px;margin-bottom:12px}
+.skwrap{display:grid;gap:14px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}@media(max-width:820px){.skwrap{grid-template-columns:1fr}}
+.stage{position:relative;border-radius:20px;overflow:hidden;border:1px solid #3b4aa0;background:#05081a;box-shadow:0 18px 50px #000a,inset 0 0 60px #4ff0ff12}
+.stage canvas{display:block;width:100%;height:auto}
+.poses{display:flex;gap:8px;margin-top:8px}.poses canvas{flex:1;min-width:0;border-radius:12px;border:1px solid var(--line);background:#0a1030;aspect-ratio:1/1.1}
+.skl{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.sk{background:#0e1535;border:1px solid var(--line);border-radius:14px;padding:8px;text-align:center}.sk canvas{width:100%;border-radius:10px;background:#0a1030}.sk b{display:block;margin:6px 0 2px}.sk.offc{opacity:.55}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}.ctl label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mut)}.ctl input[type=range]{width:130px;padding:0}.ctl select{width:auto}
+pre.code{background:#0a1030;border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto;font-size:12.5px;max-height:260px}
+.photo{width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid var(--y);background:#0a1030}
+.vb{display:inline-grid;place-items:center;width:1.25em;height:1.25em;border-radius:50%;font-size:.78em;font-weight:900;vertical-align:.05em;line-height:1;box-shadow:0 0 0 2px #14172e}.vb.dev{background:linear-gradient(135deg,#fff3a0,#ffb81f 60%,#ff8a1f);color:#3a2300}.vb.st{background:linear-gradient(135deg,#ff5cf0,#8f6bff 60%,#2f7bff);color:#fff}.dotc{display:inline-block;width:14px;height:14px;border-radius:4px;border:2px solid #14172e;margin-right:2px;vertical-align:middle}.sw{position:relative;width:46px;height:26px;display:inline-block}.sw input{opacity:0;width:0;height:0;position:absolute}.sw i{position:absolute;inset:0;background:#3b4296;border-radius:99px;cursor:pointer;transition:.15s}.sw i::after{content:'';position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.15s}.sw input:checked+i{background:var(--g)}.sw input:checked+i::after{transform:translateX(20px)}</style>
+</head>
+<body>
+<div id="login" class="hide"><div class="lbox">
+  <h1>SUBWAY RUN · ADMIN</h1><p>Entre com o e-mail e a senha de administrador cadastrados em <b>Authentication</b> do Firebase (a conta precisa estar na lista isAdmin() das regras).</p>
+  <label class="f" for="em">E-mail</label><input id="em" type="email" autocomplete="username" inputmode="email"/>
+  <label class="f" for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password"/>
+  <div class="err" id="lerr"></div>
+  <button class="btn" id="lgo" style="width:100%;margin-top:6px">ENTRAR</button>
+</div></div>
+<div id="app" class="hide">
+  <header><div class="top"><b>🛠️ ADMIN</b><span id="who"></span><button class="btn g s" id="refresh">↻ Atualizar</button><button class="btn g s" id="out">Sair</button></div>
+  <nav id="nav"></nav></header>
+  <main id="view"></main>
+</div>
+<div id="toast"></div>
+<script type="module" src="admin.js?v=5"></script>
+</body>
+</html>

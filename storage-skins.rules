@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSkinAdmin() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'capamineiro@gmail.com',
+          'mgfpsmiguel@gmail.com'
+        ];
+    }
+
+    // Skins publicadas precisam carregar as imagens sem login.
+    match /skins/{skinId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isSkinAdmin()
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+      allow delete: if isSkinAdmin();
+    }
+  }
+}

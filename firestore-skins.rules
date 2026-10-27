@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSkinAdmin() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'capamineiro@gmail.com',
+          'mgfpsmiguel@gmail.com'
+        ];
+    }
+
+    // Catálogo compacto: o jogo lê este único documento em vez de ler cada skin.
+    // Ele contém apenas skins publicadas e URLs públicas das texturas.
+    match /catalog/skins {
+      allow read: if true;
+      allow create, update: if isSkinAdmin()
+        && request.resource.data.items is list
+        && request.resource.data.items.size() <= 60;
+      allow delete: if isSkinAdmin();
+    }
+
+    // Documentos individuais servem para administrar cada skin no painel.
+    match /skins/{skinId} {
+      allow read: if isSkinAdmin() || resource.data.status == 'published';
+      allow create, update: if isSkinAdmin()
+        && request.resource.data.keys().hasOnly([
+          'name', 'price', 'skinJson', 'textures', 'status',
+          'version', 'createdBy', 'updatedAt'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 18
+        && request.resource.data.price is int
+        && request.resource.data.price >= 0
+        && request.resource.data.price <= 100000
+        && request.resource.data.status in ['draft', 'published']
+        && request.resource.data.skinJson is map
+        && request.resource.data.textures is map;
+      allow delete: if isSkinAdmin();
+    }
+  }
+}

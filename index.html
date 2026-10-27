@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+
+
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"/>
+<meta name="theme-color" content="#080d1b"/>
+<title>Subway Run</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div id="boot" role="status" aria-live="polite"><div class="by">Criador</div>
+<div class="av"><div><img id="bootImg" alt="Foto de perfil do criador" referrerpolicy="no-referrer" src="https://images.steamusercontent.com/ugc/2056504355405024375/726906C7574BE6724D03336E7414446C9B58985A/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true"><b id="bootLetter" style="display:none">S</b></div></div>
+<h1>STEVE</h1><div class="at">@h4xinteractive</div>
+<div class="bar"><i id="bootBar"></i></div><div class="pc" id="bootPc">0%</div></div>
+<script>
+/* Carregamento: sobe até 100% e então abre o menu principal do jogo.
+   Foto do criador: coloque o arquivo "perfil.jpg" na mesma pasta deste HTML (ou troque o caminho em src acima). */
+(function () {
+  var boot = document.getElementById('boot'), bar = document.getElementById('bootBar'), pc = document.getElementById('bootPc'), img = document.getElementById('bootImg'), letter = document.getElementById('bootLetter');
+  var imgDone = false, pageDone = false, fontsDone = false, t0 = performance.now(), MIN = 2300, shown = 0, finished = false;
+  var cp = ''; try { cp = localStorage.getItem('sr_creator_photo') || ''; } catch (_) {} if (cp) img.src = cp;
+  img.onload = function () { imgDone = true; }; var tried = false; img.onerror = function () { if (!tried) { tried = true; img.src = 'perfil.jpg'; return; } imgDone = true; img.style.display = 'none'; letter.style.display = 'block'; }; // se o link falhar, tenta perfil.jpg e por fim a letra S
+  if (img.complete) { if (img.naturalWidth) imgDone = true; else if (img.src) img.onerror(); }
+  addEventListener('load', function () { pageDone = true; });
+  if (document.readyState === 'complete') pageDone = true;
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { fontsDone = true; }, function () { fontsDone = true; });
+  setTimeout(function () { imgDone = pageDone = fontsDone = true; }, 7000); // segurança: nunca trava
+  function tick() {
+    var ready = imgDone && pageDone && fontsDone, el = performance.now() - t0;
+    var target = Math.min(100, el / MIN * 100); if (!ready) target = Math.min(target, 92);
+    shown += (target - shown) * .25; if (target - shown < .4) shown = target;
+    var v = Math.floor(shown); bar.style.width = shown + '%'; pc.textContent = v + '%';
+    if (shown >= 99.9 && ready && !finished) { finished = true; bar.style.width = '100%'; pc.textContent = '100%'; setTimeout(function () { boot.classList.add('out'); setTimeout(function () { boot.remove(); }, 700); }, 300); return; }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+<canvas id="c"></canvas>
+<div class="hud"><div id="score">0</div><div id="coins">🪙 0</div><button id="pauseBtn" aria-label="Pausar">II</button></div>
+<div id="timer"></div>
+<div id="fps" class="hudi">-- FPS</div>
+<div id="tvWrap" class="tvWrap p-tv" aria-label="Telão voador"><div class="tvFloat"><svg class="thr l" viewbox="0 0 30 78" aria-hidden="true"><defs><lineargradient id="thG1" x1="0" x2="1"><stop offset="0" stop-color="#6b7aa8"/><stop offset=".5" stop-color="#eef3ff"/><stop offset="1" stop-color="#5c6a98"/></lineargradient></defs><path class="fl1" d="M15 38C4 48 8 64 15 78C22 64 26 48 15 38Z" fill="#ff7a1a"/><path class="fl2" d="M15 38C9 46 11 58 15 66C19 58 21 46 15 38Z" fill="#ffe15a"/><rect x="6" y="2" width="18" height="26" rx="6" fill="url(#thG1)" stroke="#14172e" stroke-width="2"/><path d="M8 28H22L26 38H4Z" fill="#434d78" stroke="#14172e" stroke-width="2"/><rect x="9" y="8" width="12" height="3" rx="1.5" fill="#55a7ff"/></svg><svg class="thr r" viewbox="0 0 30 78" aria-hidden="true"><defs><lineargradient id="thG2" x1="0" x2="1"><stop offset="0" stop-color="#6b7aa8"/><stop offset=".5" stop-color="#eef3ff"/><stop offset="1" stop-color="#5c6a98"/></lineargradient></defs><path class="fl1" d="M15 38C4 48 8 64 15 78C22 64 26 48 15 38Z" fill="#ff7a1a"/><path class="fl2" d="M15 38C9 46 11 58 15 66C19 58 21 46 15 38Z" fill="#ffe15a"/><rect x="6" y="2" width="18" height="26" rx="6" fill="url(#thG2)" stroke="#14172e" stroke-width="2"/><path d="M8 28H22L26 38H4Z" fill="#434d78" stroke="#14172e" stroke-width="2"/><rect x="9" y="8" width="12" height="3" rx="1.5" fill="#55a7ff"/></svg><div class="tvFrame"><div id="tvScreen" class="tvScreen"><div class="tvEmpty"><b>📺</b>Sem vídeo<br/>Adicione um link do YouTube<br/>nas configurações</div></div></div></div></div>
+<div id="ov"><div class="card" id="card"></div></div>
+
+
+<script type="module" src="app.js?v=12"></script>
+</body>
+</html>

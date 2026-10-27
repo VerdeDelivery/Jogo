@@ -1,0 +1,185 @@
+SUBWAY RUN — ATUALIZAÇÃO (versão corrigida)
+===========================================
+
+POR QUE O BANCO DE DADOS ESTAVA QUEBRADO
+A versão anterior que eu fiz gravava em coleções que NÃO existem nas suas regras (players, rankings...),
+então tudo dava "permission-denied". Agora o jogo e o painel usam EXATAMENTE o mesmo formato do seu jogo
+que funciona: ranking/{uid}, profiles/{uid}, bans/{uid}, live/meta, live/verified, admins/check.
+Só existe um banco agora (o subway-run-dc9b5, o mesmo do jogo antigo). O segundo banco saiu do caminho.
+
+ÚNICA COISA A FAZER NO FIREBASE (1 minuto)
+1) Authentication > Método de login: confirme que "E-mail/senha" está ativado (as contas do jogo usam isso).
+2) Firestore > Regras: troque pelas regras do arquivo  firestore.rules  (são as SUAS regras, com uma única
+   mudança no bloco "ranking": o administrador também pode criar/editar, para corrigir tempos pelo painel).
+3) Authentication > Configurações > Domínios autorizados: adicione o endereço do jogo E o do painel.
+
+JOGO
+- Ranking semanal NOCOIN (top 50). Fora do top 50 aparece "SUA POSIÇÃO" (ex.: 72º, nome e tempo).
+- Aviso: zera toda quinta-feira em horário aleatório (mostra o próximo reset).
+- Conta/ranking/presença no mesmo formato do jogo antigo. O recorde geral (campo t) continua intacto;
+  a semana usa campos extras (wk, wt, wkt) que o jogo antigo simplesmente ignora.
+- Selos de verificado (Dev e Streamer parceiro) aparecem no ranking e no seu perfil.
+- Skins/avatares/banners publicados no painel chegam ao jogo (mesmos campos do painel antigo).
+- 38 skins novas e 8 veículos novos (um por mapa), menu único com Lives/Parceiros/Arrecadações.
+
+PAINEL (admin.html — pode ficar em outro site)
+- Login: o mesmo e-mail/senha de administrador do Firebase (precisa estar na lista isAdmin() das regras).
+- Visão geral: contas, online, offline, bloqueadas, quem está online.
+- Contas: busca, bloquear/desbloquear (nunca apaga conta).
+- Ranking: corrigir/definir o tempo de um jogador, limpar tempo, zerar a semana (só tempos), importar recordes.
+- Verificados: pesquise o usuário e dê o selo Dev ou Streamer parceiro (ou remova).
+- Skins: prompt base -> cole o código -> prévia animada -> publicar; liga/desliga das skins da loja.
+- Site: foto do criador da tela de carregamento.
+
+OBSERVAÇÕES HONESTAS
+- Não consegui testar com o seu Firebase real. Testei a lógica do ranking/contas com um Firebase simulado e a
+  sintaxe de tudo; teste logo após publicar as regras.
+- Do segundo arquivo ("conteúdo colado") só chegou o painel, não o jogo; usei o jogo do text.html como referência.
+- O painel antigo também grava em live/meta (skins). O que você publicar nas skins aparece nos dois jogos.
+- Replay e multiplayer por ranking não existem nesta versão.
+
+ATUALIZAÇÃO (telão, enquetes, selo NOVO, multijogador próprio)
+- REGRAS: cole de novo o arquivo firestore.rules no Firebase (Firestore > Regras). Entraram: enquetes (polls), multijogador (mp_*) e leitura do próprio perfil.
+- Veículos (Maria Fumaça, metrô, ônibus etc.): por cima é seguro (dá para pular e andar em cima); bater de frente ou de lado ainda elimina.
+- Multijogador: agora usa as contas do próprio jogo (Firestore), sem WebSim. Jogadores aparecem na mesma pista, sem colisão.
+- Skins antigas: o jogo e o painel passam a ler também live/skins (formato do painel antigo).
+- Painel: abas Enquetes e Telão; selo NOVO é marcado ao publicar skins e enquetes.
+
+======================================================================
+ATUALIZAÇÃO 3 — contas antigas, ranking GERAL, divisão entre 2 bancos
+======================================================================
+O QUE ENTROU
+- Ranking com 3 abas: PESSOAL (agora mostra o recorde guardado NA CONTA, em qualquer aparelho + sua posição),
+  SEMANAL (zera quinta) e GERAL (recorde de todos os tempos, top 50 + "SUA POSIÇÃO"). O GERAL lista todas as contas
+  que já têm tempo no ranking/{uid} do jogo principal, estejam online ou não.
+- Puxar contas/recordes do jogo antigo: ao entrar (e a cada sessão) o jogo lê players/{uid} (best_no_coin / best_score)
+  e sobe o ranking/{uid} se o valor antigo for maior. Só aumenta, nunca apaga nem reduz.
+- Contas: continuam sendo as do Firebase Auth do banco 1 (mesmo e-mail derivado do nome), então quem já tinha conta
+  entra com o mesmo usuário e senha.
+- Multijogador usa as mesmas contas (sala/convite/lobby agora no banco 2 se você configurar; senão, no banco 1).
+- Bloqueio: conta bloqueada (bans/) não entra no multijogador.
+
+DIVISÃO ENTRE OS DOIS BANCOS (common.js -> CFG2)
+  BANCO 1 (principal, já existe): contas/Auth, ranking, profiles, bans, live, players, enquetes.
+  BANCO 2 (social): presença online (heartbeat de ~50 s, a escrita mais pesada) + multijogador (mp_*).
+Para ativar: (1) cole a config do projeto Firebase 2 em CFG2 no common.js (jogo E painel);
+(2) no banco 2, ative Authentication > E-mail/senha e publique firestore-banco2.rules;
+(3) adicione o domínio do jogo/painel nos domínios autorizados do banco 2.
+Enquanto CFG2 = null, tudo roda só no banco 1 (como antes). Com CFG2 ativo, quem já estava logado precisa
+sair e entrar uma vez para criar a conta espelho no banco 2 (o jogo avisa isso no multijogador).
+O painel passa a ler a presença do banco 2 também (online/offline continua correto).
+
+NÃO FEITO / PRECISO DE VOCÊ
+- Tela de carregamento e fluxo de criação de conta do jogo antigo: o arquivo texto.html NÃO chegou (só os 2 zips
+  e as regras do banco 1). Mande o texto.html que eu copio a tela de carregamento e confiro a criação de conta.
+- Não testei com o seu Firebase real.
+
+======================================================================
+ATUALIZAÇÃO 4 — após ler o text.html (jogo antigo)  [CORRIGE o que está acima]
+======================================================================
+O QUE O JOGO ANTIGO REALMENTE FAZ
+- As contas antigas são LOCAIS (usuário + senha com hash ficam só no aparelho: localStorage "rio_accts"). No servidor
+  existe apenas ranking/{uid} (nome, avatar, banner, foto, t = melhor tempo, s = pontos). A senha antiga NÃO está no
+  servidor, então não dá para "puxar as contas" sem o jogador digitar a senha uma vez.
+- (Ignore a parte acima sobre players/{uid}: o jogo antigo não usa essa coleção; a leitura é inofensiva.)
+
+O QUE FIZ
+1) TODOS no ranking GERAL, online ou não: a aba GERAL lê ranking/{uid} direto, então todo mundo que já tem tempo no
+   jogo principal aparece, mesmo sem entrar na v2. Nomes repetidos (conta antiga + conta migrada) aparecem uma vez só.
+2) MIGRAÇÃO ao entrar: o jogador abre a v2, digita usuário e senha antigos -> o jogo confere a senha no aparelho,
+   cria a conta nova no servidor com a MESMA senha e leva junto o recorde (do aparelho e do ranking/{uid} antigo).
+   IMPORTANTE: isso só funciona se a v2 ficar no MESMO endereço do jogo antigo (mesmo localStorage/IndexedDB).
+   Em outro endereço, os jogadores entram como "conta nova" e a migração de senha não acontece.
+3) TELA DE CARREGAMENTO: voltou a antiga (STEVE / @h4xinteractive, foto, barra) e agora ela roda direto do
+   index.html, sem esperar rede (antes só começava depois das consultas ao Firebase). A foto definida no painel
+   continua sobrescrevendo a padrão.
+4) Removi as injeções do WebSim do index.html (fontes/scripts externos que não são mais necessários).
+
+LIMITAÇÃO CONHECIDA
+- Quem digitar um nome antigo ainda não migrado cria a conta primeiro; a verificação da senha antiga acontece no
+  aparelho, não no servidor. Se isso virar problema, o painel (aba Contas/Ranking) corrige o tempo manualmente.
+
+
+ATUALIZAÇÃO DE CORREÇÕES (26/10/2026)
+- Gestos de deslizar no mobile com touch-action:none e captura do ponteiro para reduzir cancelamentos do navegador.
+- Removido o atalho de toque duplo para prancha e o item prancha da barra de ações.
+- Editor de skins aceita descrições livres para objetos/estilos; objetos de mão personalizados recebem representação 3D em blocos (troféus reconhecidos em dourado).
+- No painel admin, marque a opção de atualizar o recorde geral para substituir o valor anterior, inclusive por um valor menor. O tempo semanal pode ser corrigido publicando novamente o jogador/valor.
+
+
+ATUALIZAÇÃO 4 — CONTROLES MOBILE E MULTIJOGADOR NO BANCO PRINCIPAL
+==================================================================
+- Gestos por dedo: eventos Pointer e Touch com fallback para WebView Android; limiar reduzido e cancelamento de gesto tratado.
+- O canvas real (#c) agora tem touch-action:none para impedir que o navegador capture o arrasto como rolagem/zoom.
+- Multijogador/presença usa sempre o Firebase do Banco 1, onde ficam as contas, mesmo se houver configuração opcional de Banco 2.
+- A lista online mostra contas autenticadas com o jogo aberto e heartbeat recente; contas cadastradas mas offline não são apresentadas como online.
+- Para correr na mesma partida, os jogadores entram na mesma sala (ou recebem convite); a lista de online não junta automaticamente todos numa corrida única.
+- Publique no Firebase principal as regras de firestore.rules incluídas se as regras atuais ainda não permitirem as coleções mp_lobby, mp_rooms e mp_invites.
+- Sintaxe JavaScript verificada; ainda é necessário testar com contas reais e regras publicadas no Firebase do projeto.
+
+
+======================================================================
+ATUALIZAÇÃO 5 (26/10/2026) — CORREÇÕES URGENTES
+======================================================================
+1) ARRASTAR O DEDO NO CELULAR NÃO FUNCIONAVA
+   Causa: o index.html tinha DOIS <canvas id="c"> (duplicado). O de cima ficava na frente e engolia o toque;
+   o jogo só escutava o de baixo. Agora só existe um canvas. Também separei os gestos: dedo = eventos touch,
+   mouse/caneta = pointer (antes os dois disparavam juntos e se atrapalhavam).
+2) "ESTOU LOGADO MAS DIZ QUE NÃO" (enquete, ranking, multijogador)
+   - O jogo agora confere no Firebase quem está logado de verdade ao abrir (reconcileSession) e sincroniza a conta.
+   - O Firebase agora usa o app padrão (igual ao jogo antigo), então sessões Google do jogo antigo no mesmo endereço continuam valendo.
+   - Conta que não está conectada ao servidor mostra um aviso no menu ("Toque aqui para entrar") em vez de ficar muda.
+   - Enquete: qualquer conta pode votar (se não houver sessão, usa login anônimo do Firebase); sem conta aparece botão ENTRAR / CRIAR CONTA.
+   - Multijogador: reconecta sozinho ao entrar/sair de conta e ao abrir a tela; avisa quando a conta não está online.
+   - Corrigido um cache antigo (IndexedDB) que podia trazer de volta uma versão velha da conta com o mesmo nome.
+3) LOGIN / CRIAÇÃO DE CONTA COM O GOOGLE (como no HTML antigo)
+   Botão "ENTRAR COM O GOOGLE" nas telas de criar conta e de entrar. Primeira vez: escolhe nome e avatar; depois entra direto.
+   A conta Google usa o mesmo uid do jogo antigo, então ranking/recorde que já existiam no ranking/{uid} voltam sozinhos.
+   NO FIREBASE: Authentication > Método de login > Google (ativado) e o domínio do jogo em "Domínios autorizados".
+   As regras (firestore.rules) NÃO mudaram.
+4) GRAVIDADE DA LUA igual à dos outros mapas (pulo normal).
+Obs.: não consegui testar com o seu Firebase real; teste logo após publicar (entrar com Google, votar na enquete, arrastar no celular).
+
+ATUALIZAÇÃO 6 — conta nova voltava para a antiga ao recarregar
+- O Firebase agora manda: ao abrir, a conta realmente logada vence qualquer conta antiga guardada no aparelho.
+- O cache do IndexedDB não sobrescreve mais a conta ativa do aparelho (só restaura se o aparelho não tiver nenhuma).
+- Entrar numa conta antiga só-local desconecta antes a sessão do Firebase, para não misturar contas.
+
+ATUALIZAÇÃO 7 — o aviso 'GO!' do multijogador ficava na tela depois de começar a partida; agora some sozinho (e também some se a sala for encerrada).
+
+ATUALIZAÇÃO 8 — nome da conta Google, banner no ranking, banners/fotos no painel
+- CONTA GOOGLE: o nome não fica mais preso ao nome do e-mail. Em "Editar perfil" a conta Google agora pode trocar o nome (3 a 14 caracteres,
+  sem repetir nome de outra conta). O nome salvo no jogo é o que vale; o do Google só é usado como sugestão na 1ª vez.
+- RANKING: no semanal e no geral (e em "SUA POSIÇÃO") a linha do jogador ganha o banner que ele está usando (imagem ou GIF animado).
+- PAINEL > aba "Banners" e aba "Fotos de perfil": nome, link da imagem/GIF, cor de fundo, "Todo mundo" ou "Só usuários específicos"
+  (o painel confere se o usuário existe no jogo antes de adicionar), prévia, botão Publicar, e lista dos já criados com Editar/Excluir.
+- As regras do Firestore NÃO mudaram. Publique os arquivos novos do jogo e do painel.
+- Não testei com o seu Firebase real; teste: entrar com Google > Editar perfil > trocar nome; criar banner no painel e escolher no jogo.
+
+ATUALIZAÇÃO 9 — NOVO BANCO: projeto Firebase recomeco-261eb
+- common.js agora aponta para o projeto recomeco-261eb (jogo E painel). Contas, ranking, banners, skins e verificados passam a ser gravados lá.
+- NO FIREBASE recomeco-261eb: (1) Firestore Database > criar banco (se ainda não existe); (2) Regras > colar firestore.rules e publicar;
+  (3) Authentication > Método de login: ativar E-mail/senha e Google; (4) Authentication > Configurações > Domínios autorizados: adicionar o endereço do jogo e do painel.
+- ATENÇÃO: é um projeto novo, então as contas e recordes do banco antigo (subway-run-dc9b5) NÃO vêm junto; todos começam do zero.
+- Se não aparecer a mudança no navegador, recarregue forçado (Ctrl+Shift+R) ou limpe o cache; os arquivos agora têm ?v=5.
+
+ATUALIZAÇÃO 10 — DOIS BANCOS (antigo + novo), avisos, manutenção e arrecadações
+BANCO 1 = subway-run-dc9b5 (o antigo): contas/Auth (as contas que já existem continuam), ranking, profiles, bans, enquetes. NADA disso mudou de lugar.
+BANCO 2 = recomeco-261eb (o novo): conteúdo publicado pelo painel (skins, banners, fotos de perfil, avisos, manutenção, arrecadações, verificados, telão, novidades).
+- O jogo lê esse conteúdo do Banco 2 primeiro (leitura pública) e só cai no Banco 1 se não achar: isso tira a leitura pesada de cada abertura do Banco 1.
+- O painel grava nos DOIS bancos (Banco 1 = reserva). Se o Banco 2 falhar, o painel avisa na tela.
+- Ranking e login ficam no Banco 1 de propósito: as regras dependem de quem está logado, e o login só existe no Banco 1.
+NO BANCO 2 (recomeco-261eb) FAÇA: Firestore > Regras > colar firestore.rules e publicar; Authentication > ativar E-mail/senha; (admin) entrar no painel com seu e-mail/senha de admin
+(o painel cria a conta no Banco 2 sozinho na 1ª vez); domínios autorizados com o endereço do painel/jogo.
+PAINEL, novas abas:
+- 📢 Avisos e jogo: aviso na tela inicial (texto + imagem/GIF por link) e botão de bloquear/liberar o jogar com mensagem de manutenção.
+- 💛 Arrecadações: ativar, título, mensagem, imagem por link/GIF ou envio do aparelho, QR do Pix (envio do aparelho), chave Pix, meta, quanto já recebeu (manual) e cor da barra.
+Obs.: GIF enviado do aparelho precisa ter até ~400 KB; GIF maior, use o link. Não testei com seu Firebase real.
+
+
+ATUALIZAÇÃO V8 — PIX E CINEMÁTICAS
+- A tela de arrecadações agora tem texto padrão: “Qualquer valor nos ajuda a melhorar cada vez mais o nosso jogo!”, chave Pix e QR de fallback.
+- O arquivo pix-qr.jpg usa a imagem de QR enviada nesta conversa. Confira se ele é legível e corresponde à chave Pix antes de publicar.
+- Ao iniciar uma corrida solo, aparece uma cutscene curta. A história muda conforme o índice do mapa selecionado. O jogador pode pular ou iniciar a corrida.
+- Multiplayer não recebe cutscene para não atrasar a sincronização da partida.
+- Para a arrecadação aparecer, a configuração do painel ainda pode precisar estar marcada como ativa no banco compartilhado.
