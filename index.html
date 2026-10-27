@@ -11,18 +11,41 @@
 </head>
 <body>
 
-<div id="boot" role="status" aria-live="polite"><div class="by">Criador</div>
-<div class="av"><div><img id="bootImg" alt="Foto de perfil do criador" referrerpolicy="no-referrer" src="https://images.steamusercontent.com/ugc/2056504355405024375/726906C7574BE6724D03336E7414446C9B58985A/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true"><b id="bootLetter" style="display:none">S</b></div></div>
-<h1>STEVE</h1><div class="at">@h4xinteractive</div>
-<div class="bar"><i id="bootBar"></i></div><div class="pc" id="bootPc">0%</div></div>
+<div id="boot" role="status" aria-live="polite"><div class="by">SUBWAY RUN • CARREGANDO</div>
+<div class="bootCreditLabel">DESIGN</div>
+<div class="av"><div><img id="bootImg" alt="Foto de perfil de Ivad" referrerpolicy="no-referrer" src="https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/ef7bfb18128bb2b969e297ab6d013b5f~tplv-tiktokx-cropcenter:100:100.jpeg?dr=14579&refresh_token=a85d6a5f&x-expires=1793311200&x-signature=VrhEPuqiZyUDaG57P7%2B8ceTKBNM%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=my2"><b id="bootLetter" style="display:none">I</b></div></div>
+<h1>IVAD</h1><div class="at">@ivad.lives</div>
+<div class="bar"><i id="bootBar"></i></div><div class="pc" id="bootPc">0%</div><div class="bootLoadingNote">Preparando seu mundo...</div></div>
+<style>
+/* Ajustes isolados da tela de carregamento */
+#boot{gap:0;overflow:hidden}
+#boot::before{content:"";position:absolute;width:min(78vw,430px);aspect-ratio:1;border:1px solid #7cecff20;border-radius:50%;box-shadow:0 0 0 26px #7cecff08,0 0 0 58px #ff5c8a06;animation:bootOrbit 12s linear infinite;pointer-events:none}
+#boot::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 20%,#ffffff06 45%,transparent 65%);transform:translateX(-100%);animation:bootSweep 3.8s ease-in-out infinite;pointer-events:none}
+#boot>*{position:relative;z-index:1}
+#boot .by{font-size:10px;letter-spacing:.25em;margin-bottom:17px;color:#9beaff;animation:bootTextGlow 2.4s ease-in-out infinite}
+#boot .bootCreditLabel{font:900 10px/1 system-ui,sans-serif;letter-spacing:.28em;color:#ffd21f;margin-bottom:9px;text-shadow:0 0 15px #ffd21f55}
+#boot .av{width:96px;height:96px;padding:4px;box-shadow:0 0 25px #4ff0ff55,0 0 44px #ff5c8a22;animation:bootSpin 5s linear infinite}
+#boot .av>div{animation:bootSpin 5s linear infinite reverse}
+#boot .av b{font-size:42px}
+#boot h1{font-size:36px;margin:15px 0 4px;letter-spacing:.12em}
+#boot .at{font-size:14px}
+#boot .bar{margin-top:30px;width:min(260px,70vw);height:10px}
+#boot .pc{font-size:13px;margin-top:9px}
+#boot .bootLoadingNote{font:600 10px/1.4 system-ui,sans-serif;letter-spacing:.12em;color:#b8d9ef;opacity:.8;margin-top:15px;animation:bootPulse 1.5s ease-in-out infinite}
+@keyframes bootOrbit{to{transform:rotate(360deg)}}
+@keyframes bootSweep{0%,15%{transform:translateX(-100%)}65%,100%{transform:translateX(100%)}}
+@keyframes bootTextGlow{0%,100%{opacity:.75}50%{opacity:1;text-shadow:0 0 12px #4ff0ff99}}
+@keyframes bootPulse{0%,100%{opacity:.55}50%{opacity:1}}
+@media(max-height:600px){#boot .by{margin-bottom:8px}#boot .av{width:78px;height:78px}#boot h1{font-size:30px;margin-top:9px}#boot .bar{margin-top:18px}#boot .bootLoadingNote{margin-top:8px}}
+</style>
 <script>
 /* Carregamento: sobe até 100% e então abre o menu principal do jogo.
    Foto do criador: coloque o arquivo "perfil.jpg" na mesma pasta deste HTML (ou troque o caminho em src acima). */
 (function () {
   var boot = document.getElementById('boot'), bar = document.getElementById('bootBar'), pc = document.getElementById('bootPc'), img = document.getElementById('bootImg'), letter = document.getElementById('bootLetter');
   var imgDone = false, pageDone = false, fontsDone = false, t0 = performance.now(), MIN = 2300, shown = 0, finished = false;
-  var cp = ''; try { cp = localStorage.getItem('sr_creator_photo') || ''; } catch (_) {} if (cp) img.src = cp;
-  img.onload = function () { imgDone = true; }; var tried = false; img.onerror = function () { if (!tried) { tried = true; img.src = 'perfil.jpg'; return; } imgDone = true; img.style.display = 'none'; letter.style.display = 'block'; }; // se o link falhar, tenta perfil.jpg e por fim a letra S
+  // A foto e o crédito de design definidos nesta tela são fixos para esta versão.
+  img.onload = function () { imgDone = true; }; var tried = false; img.onerror = function () { if (!tried) { tried = true; img.src = 'perfil.jpg'; return; } imgDone = true; img.style.display = 'none'; letter.style.display = 'block'; }; // se o link falhar, tenta perfil.jpg e por fim a letra I
   if (img.complete) { if (img.naturalWidth) imgDone = true; else if (img.src) img.onerror(); }
   addEventListener('load', function () { pageDone = true; });
   if (document.readyState === 'complete') pageDone = true;
@@ -47,6 +70,6 @@
 <div id="ov"><div class="card" id="card"></div></div>
 
 
-<script type="module" src="app.js?v=12"></script>
+<script type="module" src="app.js?v=13"></script>
 </body>
 </html>

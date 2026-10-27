@@ -179,36 +179,80 @@ function screen(name) {
 }
 
 function drawAIMaps(){
-  let credits=200; try{credits=Number(localStorage.getItem('sr_ai_map_credits')||200)}catch(_){}
-  card.innerHTML=`<div class="ai-map-head"><div class="eyebrow">OFICINA CRIATIVA</div><h1>🤖 CRIAR MAPAS COM IA</h1><p>Crie uma ideia de mapa para Subway Run. Cada geração custa 25 créditos; você começa com 200.</p></div>
-  <div class="ai-map-credit">🪙 Seus créditos: <b id="aiMapCredits">${Math.max(0,credits)}</b></div>
-  <label for="aiMapPrompt">Descreva seu mapa<textarea id="aiMapPrompt" rows="5" maxlength="1200" placeholder="Ex.: Floresta Neon, trilhos suspensos, árvores brilhantes, rampas, obstáculos justos e moedas distribuídas nas três pistas..."></textarea></label>
-  <p class="ai-map-hint">A IA deve criar somente mapas para o jogo. Inclua obstáculos justos e moedas; não peça dados do site, vantagens injustas ou falhas.</p>
-  <button class="btn" id="aiMapGenerate">✨ GERAR MAPA (25 CRÉDITOS)</button>
-  <div id="aiMapStatus" class="msg" role="status">A geração precisa do servidor configurado com a chave GROQ_API_KEY. A chave não deve ser colocada neste navegador.</div>
-  <section id="aiMapResult" class="ai-map-result" hidden></section>
+  const uid=String(ACC&&ACC.uid||'guest');
+  const creditKey='sr_ai_studio_credits_'+uid, dayKey='sr_ai_studio_day_'+uid;
+  function resetStamp(){const d=new Date();if(d.getHours()<5)d.setDate(d.getDate()-1);d.setHours(5,0,0,0);return d.toISOString().slice(0,10)}
+  const stamp=resetStamp();
+  try{if(localStorage.getItem(dayKey)!==stamp){localStorage.setItem(dayKey,stamp);localStorage.setItem(creditKey,'200')}}catch(_){}
+  let credits=200;try{const n=Number(localStorage.getItem(creditKey));credits=Number.isFinite(n)?n:200}catch(_){}
+  let currentMap=null, attachments=[], chat=[];
+  card.innerHTML=`<div class="ai-map-head"><div class="eyebrow">SUBWAY RUN · ESTÚDIO CRIATIVO</div><h1>🤖 CRIAR MAPAS COM IA</h1><p>Descreva o mapa, converse com a IA para ajustar e teste a prévia antes de enviar para revisão.</p></div>
+  <div class="ai-map-credit">🪙 Créditos de hoje: <b id="aiMapCredits">${Math.max(0,credits)}</b> / 200 <small>· renovação diária às 05:00</small></div>
+  <div class="ai-studio-tabs" role="tablist"><button type="button" class="active" data-tab="chat">💬 Chat IA</button><button type="button" data-tab="preview">🎮 Preview</button><button type="button" data-tab="files">📎 Arquivos e texturas</button></div>
+  <section class="ai-studio-panel" data-panel="chat"><div class="ai-chat-log" id="aiChatLog"><div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva o tema, pistas, obstáculos, moedas e estilo visual. Depois você pode pedir mudanças sem começar do zero.</p></div></div>
+  <label for="aiMapPrompt">Sua mensagem<textarea id="aiMapPrompt" rows="4" maxlength="1600" placeholder="Ex.: Crie uma cidade futurista à noite, com três pistas, trilhos elevados, rampas, moedas e obstáculos justos..."></textarea></label>
+  <button class="btn" id="aiMapGenerate">✨ GERAR MAPA (25 CRÉDITOS)</button><p class="ai-map-hint">A IA só pode criar conteúdo do mapa. Não peça dados privados, segredos, exploits ou vantagens injustas.</p></section>
+  <section class="ai-studio-panel" data-panel="preview" hidden><div id="aiPreviewEmpty" class="ai-preview-empty"><div class="ai-thinking-orb">✦</div><h3>A prévia aparecerá aqui</h3><p>Enquanto a IA trabalha, você pode abrir esta aba e acompanhar o estado da criação.</p></div><div id="aiPreviewWorking" class="ai-preview-empty" hidden><div class="ai-thinking-orb spinning">✦</div><h3>A IA está construindo seu mapa…</h3><p>Estruturando pistas, objetos, obstáculos e moedas. Isso pode levar alguns segundos.</p><div class="ai-progress"><span></span></div></div><div id="aiPreviewReady" hidden><div id="aiMapResult" class="ai-map-result"></div></div></section>
+  <section class="ai-studio-panel" data-panel="files" hidden><h3>📎 Adicionar arquivos ao mapa</h3><p>Envie texturas (PNG/JPG/WebP) ou arquivos de referência (HTML, CSS, JS, JSON, OBJ, MTL, TXT). A IA recebe texto de arquivos de código para analisá-los; arquivos executáveis não são executados.</p><input id="aiMapFiles" type="file" multiple accept="image/png,image/jpeg,image/webp,.html,.htm,.css,.js,.json,.obj,.mtl,.txt"><div id="aiFileList" class="ai-file-list"><p>Nenhum arquivo anexado.</p></div><p class="ai-map-hint">As texturas podem ser visualizadas nesta sessão. Não envie senhas, chaves de API nem dados pessoais.</p></section>
+  <div id="aiMapStatus" class="msg" role="status">Entre em uma conta conectada para usar o estúdio. A chave da Groq deve ficar apenas no servidor.</div>
   <button class="btn g" id="aiMapBack">VOLTAR AO MENU</button>`;
+  const panels=[...card.querySelectorAll('[data-panel]')],tabs=[...card.querySelectorAll('[data-tab]')];
+  function setTab(t){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));panels.forEach(p=>p.hidden=p.dataset.panel!==t)}
+  tabs.forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
   $('#aiMapBack').onclick=()=>screen(backTo);
+  const status=$('#aiMapStatus'),promptEl=$('#aiMapPrompt'),chatLog=$('#aiChatLog');
+  function renderChat(){chatLog.innerHTML=chat.length?chat.map(m=>`<div class="ai-chat-message ${m.role==='assistant'?'assistant':'user'}"><b>${m.role==='assistant'?'IA Subway Run':'Você'}</b><p>${esc(m.content)}</p></div>`).join(''):'<div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva a primeira versão e depois peça ajustes pelo chat.</p></div>';chatLog.scrollTop=chatLog.scrollHeight}
+  function renderFiles(){const box=$('#aiFileList');box.innerHTML=attachments.length?attachments.map((a,i)=>`<div class="ai-file-row"><span>${a.kind==='image'?'🖼️':'📄'} ${esc(a.name)} <small>${Math.round(a.size/1024)} KB</small></span><button type="button" class="btn g" data-remove-file="${i}">Remover</button>${a.kind==='image'&&a.url?`<img src="${a.url}" alt="Prévia de ${esc(a.name)}">`:''}</div>`).join(''):'<p>Nenhum arquivo anexado.</p>';box.querySelectorAll('[data-remove-file]').forEach(b=>b.onclick=()=>{const a=attachments.splice(Number(b.dataset.removeFile),1)[0];if(a&&a.url)URL.revokeObjectURL(a.url);renderFiles()})}
+  $('#aiMapFiles').onchange=async e=>{for(const f of [...(e.target.files||[])].slice(0,8)){if(f.size>2*1024*1024){status.textContent=`${f.name} ultrapassa 2 MB e foi ignorado.`;continue}const imageFile=f.type.startsWith('image/');let content='';if(!imageFile){try{content=(await f.text()).slice(0,12000)}catch(_){content='[Não foi possível ler o arquivo como texto]'}}attachments.push({name:f.name,size:f.size,type:f.type,kind:imageFile?'image':'text',content,url:imageFile?URL.createObjectURL(f):''})}renderFiles();e.target.value=''};
+  function renderMap(map){currentMap=map;const result=$('#aiMapResult');result.innerHTML=`<h2>✅ ${esc(map.name||'Mapa criado')}</h2><p>${esc(map.description||'Mapa pronto para teste privado.')}</p><div class="ai-map-preview-wrap"><canvas id="aiMapPreview" width="900" height="420" aria-label="Prévia jogável do mapa"></canvas></div><div class="ai-map-test-controls"><button type="button" class="btn g" data-lane="-1">⬅ ESQUERDA</button><button type="button" class="btn g" data-action="jump">⬆ PULAR</button><button type="button" class="btn g" data-action="slide">⬇ DESLIZAR</button><button type="button" class="btn g" data-lane="1">DIREITA ➡</button></div><p class="ai-map-test-note">Teste privado: os pontos e moedas daqui não alteram o ranking oficial.</p><div class="ai-map-actions"><button type="button" class="btn" id="aiMapReplay">▶ Reiniciar teste</button><button type="button" class="btn g" id="aiMapDetailsBtn">Ver estrutura gerada</button><button type="button" class="btn g" id="aiMapSubmit">Enviar para revisão</button></div><details class="ai-map-details" id="aiMapDetails" hidden><summary>Estrutura JSON</summary><pre class="ai-map-json"></pre></details>`;
+    result.querySelector('pre').textContent=JSON.stringify(map,null,2);startAIMapTest(map,result.querySelector('#aiMapPreview'),result.querySelector('.ai-map-test-note'));
+    result.querySelectorAll('[data-lane]').forEach(b=>b.onclick=()=>result.dispatchEvent(new CustomEvent('aimap-control',{detail:{lane:Number(b.dataset.lane)}})));result.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>result.dispatchEvent(new CustomEvent('aimap-control',{detail:{action:b.dataset.action}})));
+    result.querySelector('#aiMapReplay').onclick=()=>startAIMapTest(map,result.querySelector('#aiMapPreview'),result.querySelector('.ai-map-test-note'));
+    result.querySelector('#aiMapDetailsBtn').onclick=()=>{const d=result.querySelector('#aiMapDetails');d.hidden=!d.hidden};
+    result.querySelector('#aiMapSubmit').onclick=()=>{status.textContent='O envio para a fila administrativa precisa estar conectado ao backend de publicação. Por enquanto, baixe/copie a estrutura para revisão; não foi publicada globalmente.';setTab('chat')};
+    $('#aiPreviewEmpty').hidden=true;$('#aiPreviewWorking').hidden=true;$('#aiPreviewReady').hidden=false;setTab('preview')
+  }
   $('#aiMapGenerate').onclick=async()=>{
-    const prompt=$('#aiMapPrompt').value.trim(),status=$('#aiMapStatus'),btn=$('#aiMapGenerate');
-    if(!prompt){status.textContent='Descreva o mapa antes de gerar.';return}
-    if(prompt.length<12){status.textContent='Escreva um pouco mais sobre o mapa (mínimo de 12 caracteres).';return}
-    if(credits<25){status.textContent='Você não tem créditos suficientes. Cada geração custa 25 créditos.';return}
-    if(!(ACC&&ACC.online)){status.textContent='Entre em uma conta conectada ao servidor para gerar mapas e salvar seus créditos com segurança.';return}
-    btn.disabled=true;status.textContent='Gerando mapa…'; 
-    try{
-      const response=await fetch('/api/maps/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
-      const payload=await response.json().catch(()=>({error:'Resposta inválida do servidor.'}));
-      if(!response.ok||!payload||!payload.map)throw new Error((payload&&payload.error)||('Falha HTTP '+response.status));
-      credits=(payload.creditsRemaining===null||payload.creditsRemaining===undefined)?Math.max(0,credits-25):Number(payload.creditsRemaining);if(!Number.isFinite(credits))credits=Math.max(0,credits-25);try{localStorage.setItem('sr_ai_map_credits',String(credits))}catch(_){}
-      $('#aiMapCredits').textContent=credits;
-      const result=$('#aiMapResult');result.hidden=false;result.innerHTML=`<h2>✅ ${esc(payload.map.name||'Mapa gerado')}</h2><p>${esc(payload.map.description||'Mapa criado para teste privado.')}</p><pre class=\"ai-map-json\"></pre><p>Este é um projeto de mapa em modo de teste. Ele não altera recordes ou ranking oficial.</p>`;
-      result.querySelector('pre').textContent=JSON.stringify(payload.map,null,2);
-      status.textContent='Mapa gerado. A validação e publicação global dependem da fila administrativa configurada no servidor.';
-    }catch(e){status.textContent='Não foi possível gerar: '+String(e&&e.message||e)+' Verifique se GROQ_API_KEY está configurada no servidor.'}
+    const prompt=promptEl.value.trim();if(!prompt){status.textContent='Escreva sua ideia ou a mudança que deseja fazer.';return}if(prompt.length<12){status.textContent='Escreva pelo menos 12 caracteres.';return}if(credits<25){status.textContent='Seus créditos de hoje acabaram. A renovação está prevista para as 05:00.';return}if(!(ACC&&ACC.online)){status.textContent='Entre em uma conta conectada ao servidor para continuar.';return}
+    const btn=$('#aiMapGenerate');btn.disabled=true;$('#aiPreviewEmpty').hidden=true;$('#aiPreviewReady').hidden=true;$('#aiPreviewWorking').hidden=false;setTab('preview');status.textContent='A IA está trabalhando no mapa…';chat.push({role:'user',content:prompt});renderChat();
+    try{const attachmentPayload=attachments.filter(a=>a.kind==='text').map(a=>({name:a.name,content:a.content}));const response=await fetch('/api/maps/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,currentMap,attachments:attachmentPayload})});const payload=await response.json().catch(()=>({error:'Resposta inválida do servidor.'}));if(!response.ok||!payload||!payload.map)throw new Error((payload&&payload.error)||('Falha HTTP '+response.status));
+      currentMap=payload.map;credits=Math.max(0,credits-25);try{localStorage.setItem(creditKey,String(credits));localStorage.setItem(dayKey,stamp)}catch(_){}$('#aiMapCredits').textContent=credits;chat.push({role:'assistant',content:`Mapa atualizado: ${currentMap.name||'Mapa novo'}. ${currentMap.description||''} Abra a aba Preview para testar. A estrutura está disponível em “Ver estrutura gerada”.`});renderChat();renderMap(currentMap);promptEl.value='';status.textContent='Mapa gerado. Você pode voltar ao chat e pedir alterações; cada geração/alteração custa 25 créditos.';
+    }catch(e){$('#aiPreviewWorking').hidden=true;$('#aiPreviewEmpty').hidden=false;setTab('chat');status.textContent='Não foi possível gerar: '+String(e&&e.message||e)+' Verifique a função do EdgeOne e a variável GROQ_API_KEY.'}
     finally{btn.disabled=false}
   };
 }
+function startAIMapTest(map,canvas,note){
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,host=canvas.closest('.ai-map-result');
+  let lane=1,score=0,hit=0,frame=0,jump=0,slide=0,last=performance.now(),running=true;
+  const lanes=Array.isArray(map.lanes)?map.lanes:[];
+  const palette=String(map.theme||'').toLowerCase().includes('neon')?['#19e7ff','#ff4dce','#b6ff54']:['#54d6a0','#e4b85d','#8bc8ff'];
+  const items=[];
+  for(let l=0;l<3;l++){
+    const data=lanes[l]||{},obs=Array.isArray(data.obstacles)&&data.obstacles.length?data.obstacles:['barreira'];
+    for(let j=0;j<Math.min(5,obs.length+1);j++)items.push({lane:l,z:0.22+j*.145,type:'obstacle',label:String(obs[j%obs.length]||'obstáculo')});
+    for(let j=0;j<Math.min(7,Number(data.coins)||4);j++)items.push({lane:l,z:0.14+j*.115,type:'coin'});
+  }
+  function move(d){lane=Math.max(0,Math.min(2,lane+d))}
+  function control(e){if(e.detail&&Number.isFinite(e.detail.lane))move(e.detail.lane);if(e.detail&&e.detail.action==='jump')jump=28;if(e.detail&&e.detail.action==='slide')slide=24}
+  function key(e){if(!canvas.isConnected)return;const k=e.key.toLowerCase();if(['arrowleft','arrowright','arrowdown',' ','a','d','arrowup'].includes(k))e.preventDefault();if(k==='arrowleft'||k==='a')move(-1);if(k==='arrowright'||k==='d')move(1);if(k===' '||k==='arrowup')jump=28;if(k==='arrowdown')slide=24}
+  host.addEventListener('aimap-control',control);window.addEventListener('keydown',key);
+  function poly(points,color){ctx.fillStyle=color;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill()}
+  function draw(now){if(!canvas.isConnected||!running){window.removeEventListener('keydown',key);host.removeEventListener('aimap-control',control);return}
+    const dt=Math.min(2,(now-last)/16.67);last=now;frame+=dt;score+=dt*.08;if(jump>0)jump-=dt;if(slide>0)slide-=dt;
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#101b43');g.addColorStop(1,'#050814');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    for(let i=0;i<65;i++){ctx.globalAlpha=.25+(i%5)*.12;ctx.fillStyle=i%3===0?palette[1]:'#b7d8ff';ctx.fillRect((i*137+Math.sin(i*3.1)*30)%W,(i*47)%220,2,2)}ctx.globalAlpha=1;
+    poly([[W*.37,105],[W*.63,105],[W*.96,H],[W*.04,H]],'#1b2540');
+    for(let i=0;i<=3;i++){ctx.strokeStyle=i===0||i===3?'#647ba8':palette[0];ctx.lineWidth=i===0||i===3?4:2;ctx.beginPath();ctx.moveTo(W*(.37+i*.26/3),105);ctx.lineTo(W*(.04+i*.92/3),H);ctx.stroke()}
+    for(let i=0;i<9;i++){const y=110+((i*48+frame*12)%330),t=(y-105)/(H-105),half=W*(.13+.33*t);ctx.strokeStyle='rgba(160,190,255,.13)';ctx.beginPath();ctx.moveTo(W/2-half,y);ctx.lineTo(W/2+half,y);ctx.stroke()}
+    items.forEach((it,i)=>{const z=(it.z+frame*.0035)%1,y=110+z*300,half=W*(.13+.33*z),x=W/2+(it.lane-1)*half*.66,size=9+z*34;if(it.type==='coin'){ctx.fillStyle='#ffd84a';ctx.beginPath();ctx.arc(x,y,size*.28,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff2a8';ctx.lineWidth=3;ctx.stroke()}else{ctx.fillStyle=palette[it.lane];ctx.fillRect(x-size*.6,y-size*.65,size*1.2,size*1.3);ctx.fillStyle='#11182b';ctx.fillRect(x-size*.35,y-size*.4,size*.7,size*.25);if(z>.92&&it.lane===lane&&jump<1&&slide<1&&Math.floor(frame)%90===i%90){hit++;it.z=-2}}});
+    const px=W/2+(lane-1)*W*.29,py=H-56-(jump>0?Math.sin((jump/28)*Math.PI)*52:0);ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(px,H-34,25,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f3f7ff';ctx.fillRect(px-13,py-31,26,30);ctx.fillStyle=palette[1];ctx.fillRect(px-16,py-48,32,21);ctx.fillStyle='#18233e';ctx.fillRect(px-8,py-41,5,5);ctx.fillRect(px+4,py-41,5,5);if(slide>0){ctx.fillStyle='#ffe36a';ctx.fillRect(px-22,py-7,44,8)}
+    ctx.fillStyle='#fff';ctx.font='bold 18px system-ui';ctx.fillText('TESTE PRIVADO • '+String(map.difficulty||'médio').toUpperCase(),18,28);ctx.font='15px system-ui';ctx.fillText('Distância: '+Math.floor(score)+' m | Obstáculos: '+hit+' | Pista '+(lane+1)+'/3',18,52);
+    if(note)note.textContent='Teste privado ativo — ← → ou A/D muda de pista, espaço/↑ pula, ↓ desliza. Distância: '+Math.floor(score)+' m. Nada é enviado ao ranking oficial.';requestAnimationFrame(draw)
+  }
+  requestAnimationFrame(draw);
+}
+
 function roomSend(m){if(MATCH.socket)MATCH.socket.send(m)}
 function roomAvatar(p,px){if(p&&p.avatarUrl)return '<img class="av" src="'+esc(p.avatarUrl)+'" width="'+px+'" height="'+px+'" alt="" loading="lazy">';return avatarHTML({avatar:avParse(p&&p.avatar)},px)}
 async function ensureMultiplayerSocket(){if(MATCH.socket||MATCH.connecting)return;if(!(ACC&&ACC.online)){MATCH.message=ACC?'Sua conta não está conectada. Toque no seu nome no menu e entre de novo para jogar online.':'Entre numa conta para usar o multijogador.';renderLobbyData();return}MATCH.connecting=true;try{const s=await joinFsRoom();MATCH.socket=s;const profile=async()=>{let u=null;try{u=await window.websim?.getUser()}catch(_){}roomSend({type:'profile',name:ACC&&ACC.name||CFG.nick||'Visitante',avatar:String(ACC&&ACC.avatar!=null?ACC.avatar:0),character:CFG.char,customAccount:!!ACC,platformAvatar:!ACC&&!!u&&u.username!=='anonymous'})};s.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}if(m.type==='welcome'){MATCH.id=m.id;MATCH.users=m.users||[];MATCH.rooms=m.rooms||[];profile();renderLobbyData()}if(m.type==='lobby'){MATCH.users=m.users||[];MATCH.rooms=m.rooms||[];const me=MATCH.users.find(x=>x.id===MATCH.id);if(me&&!me.roomId&&MATCH.room){MATCH.room=null;MATCH.active=false;MATCH.phase='';updateMatchHud()}renderLobbyData()}if(m.type==='created'||m.type==='joined'){MATCH.message='';renderLobbyData()}if(m.type==='match'){MATCH.room=m.room;MATCH.phase=m.room.phase;updateMatchHud();renderLobbyData()}if(m.type==='countdown'){MATCH.phase='countdown';startCountdown(m.startAt);updateMatchHud();renderLobbyData()}if(m.type==='go'){MATCH.phase='running';updateMatchHud();if(!MATCH.started&&!MATCH.countdownTimer&&!MATCH.goPending)startCountdown(m.startedAt)}if(m.type==='progress'){const p=MATCH.room&&MATCH.room.players.find(x=>x.id===m.id);if(p){p.distance=m.distance;if(Number.isFinite(m.lane))p.lane=m.lane;updateMatchHud()}}if(m.type==='eliminated'){const p=MATCH.room&&MATCH.room.players.find(x=>x.id===m.id);if(p)p.status='out';if(m.id===MATCH.id)MATCH.eliminated=true;updateMatchHud();renderLobbyData()}if(m.type==='podium'){MATCH.podium=m.podium||[];recordMatchResult(m);MATCH.phase='finished';MATCH.active=false;st='podium';stopMusic();$('#pauseBtn').style.visibility='hidden';clearInterval(MATCH.countdownTimer);MATCH.countdownTimer=null;const c=document.getElementById('matchCountdown');if(c)c.remove();updateMatchHud();screen('podium')}if(m.type==='invite'){MATCH.invitation=m;renderLobbyData()}if(m.type==='closed'){clearInterval(MATCH.countdownTimer);MATCH.countdownTimer=null;{const c=document.getElementById('matchCountdown');if(c)c.remove()}MATCH.room=null;MATCH.active=false;MATCH.phase='';MATCH.message=m.message;updateMatchHud();renderLobbyData()}if(m.type==='error'){MATCH.message=m.message||'Não foi possível concluir.';renderLobbyData()}};s.onreconnect=()=>{MATCH.room=null;MATCH.phase='';MATCH.active=false;profile();renderLobbyData()};s.onclose=e=>{MATCH.socket=null;MATCH.message=e.reason||'Conexão multiplayer encerrada.';MATCH.room=null;MATCH.active=false;updateMatchHud();renderLobbyData()}}catch(er){MATCH.message=(er&&er.message)||'Não foi possível conectar ao multijogador.'}finally{MATCH.connecting=false;renderLobbyData()}}
