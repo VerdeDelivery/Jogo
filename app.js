@@ -197,12 +197,13 @@ function drawAIMaps(){
     if(!(ACC&&ACC.online)){status.textContent='Entre em uma conta conectada ao servidor para gerar mapas e salvar seus créditos com segurança.';return}
     btn.disabled=true;status.textContent='Gerando mapa…'; 
     try{
-      const r=await api('/api/maps/generate','POST',{prompt});
-      if(!r||r.status<200||r.status>=300||!r.data||!r.data.map)throw new Error((r&&r.data&&r.data.error)||('Falha HTTP '+(r&&r.status||'desconhecida')));
-      credits=Number(r.data.creditsRemaining);try{localStorage.setItem('sr_ai_map_credits',String(credits))}catch(_){}
+      const response=await fetch('/api/maps/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+      const payload=await response.json().catch(()=>({error:'Resposta inválida do servidor.'}));
+      if(!response.ok||!payload||!payload.map)throw new Error((payload&&payload.error)||('Falha HTTP '+response.status));
+      credits=(payload.creditsRemaining===null||payload.creditsRemaining===undefined)?Math.max(0,credits-25):Number(payload.creditsRemaining);if(!Number.isFinite(credits))credits=Math.max(0,credits-25);try{localStorage.setItem('sr_ai_map_credits',String(credits))}catch(_){}
       $('#aiMapCredits').textContent=credits;
-      const result=$('#aiMapResult');result.hidden=false;result.innerHTML=`<h2>✅ ${esc(r.data.map.name||'Mapa gerado')}</h2><p>${esc(r.data.map.description||'Mapa criado para teste privado.')}</p><pre class="ai-map-json"></pre><p>Este é um projeto de mapa em modo de teste. Ele não altera recordes ou ranking oficial.</p>`;
-      result.querySelector('pre').textContent=JSON.stringify(r.data.map,null,2);
+      const result=$('#aiMapResult');result.hidden=false;result.innerHTML=`<h2>✅ ${esc(payload.map.name||'Mapa gerado')}</h2><p>${esc(payload.map.description||'Mapa criado para teste privado.')}</p><pre class=\"ai-map-json\"></pre><p>Este é um projeto de mapa em modo de teste. Ele não altera recordes ou ranking oficial.</p>`;
+      result.querySelector('pre').textContent=JSON.stringify(payload.map,null,2);
       status.textContent='Mapa gerado. A validação e publicação global dependem da fila administrativa configurada no servidor.';
     }catch(e){status.textContent='Não foi possível gerar: '+String(e&&e.message||e)+' Verifique se GROQ_API_KEY está configurada no servidor.'}
     finally{btn.disabled=false}

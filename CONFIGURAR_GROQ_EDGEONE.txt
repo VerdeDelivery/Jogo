@@ -1,0 +1,9 @@
+SUBWAY RUN — GROQ NO EDGEONE PAGES
+
+A pasta functions deve ficar na raiz do repositório, no mesmo nível de index.html e app.js. Ela adiciona a rota POST /api/maps/generate.
+
+O app.js foi alterado para chamar a rota do EdgeOne diretamente, em vez da função local do Firebase que devolvia “Rota inexistente”.
+
+No EdgeOne, mantenha GROQ_API_KEY configurada para Production. Faça commit/push e aguarde a nova publicação terminar com sucesso.
+
+IMPORTANTE: esta é uma integração inicial para testar a chamada Groq e retornar uma descrição JSON do mapa, não um mapa 3D jogável completo. Os créditos ainda são controlados pelo navegador e não são seguros contra adulteração. Antes de abrir ao público, implementar autenticação, cobrança de créditos no servidor/Firestore e o renderizador 3D do mapa.
