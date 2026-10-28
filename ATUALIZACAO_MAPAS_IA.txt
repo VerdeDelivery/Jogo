@@ -1,16 +1,30 @@
-SUBWAY RUN v12 - OPÇÃO CRIAR MAPAS COM IA NO MENU PRINCIPAL
+SUBWAY RUN - MAPAS COM IA v2 (jogáveis no motor real, sem vantagens)
 
-- Adicionado botão “🤖 CRIAR MAPAS COM IA” no menu principal.
-- Tela com campo para descrever o mapa, créditos e resultado JSON.
-- Endpoint de servidor /api/maps/generate usando Groq com GROQ_API_KEY configurada como segredo do servidor.
-- O servidor atribui 200 créditos por jogador e cobra 25 por geração válida; créditos não são confiados ao navegador.
-- Mapas gerados são armazenados como pendentes para revisão, sem tocar nos recordes oficiais.
-- Validação de estrutura, pistas, obstáculos e moedas no servidor.
+O QUE MUDOU
+- A IA agora cria mapas no MESMO formato dos seus mapas oficiais: céu, sol/lua, chão, leito, trilho, prédios,
+  cenário lateral (city, cactus, palm, pine, rock, crater, voxtree, house), veículo que cruza a pista
+  (bus, ghost, sled, buggy, logtruck, minecart, bullet, metro, bonde, wagon, ufo) e clima (chuva, neve, estrelas...).
+- O mapa gerado roda no motor 3D de verdade (botão "JOGAR AGORA"), não mais numa prévia 2D.
+- "Meus mapas": cada jogador guarda até 10 mapas no aparelho, joga, exclui e compartilha por código (SRMAP1:...).
+- O prompt da IA ganhou exemplos dos seus mapas (Deserto, Cidade Neon, Neve, São Paulo) e temperatura maior, para mais criatividade.
 
-CONFIGURAÇÃO NECESSÁRIA
-1. Configure GROQ_API_KEY como segredo/variável de ambiente do servidor (Cloudflare Worker secret ou equivalente). Não coloque a chave em app.js, index.html ou localStorage público.
-2. Publique o server.js atualizado.
-3. Jogadores precisam entrar numa conta conectada ao servidor para gerar mapas.
+COMO FICA SEM VANTAGEM / SEM BUG
+- A IA só devolve tema visual. Moedas, obstáculos, velocidade, pulo e gravidade são do motor e iguais em todos os mapas.
+- Lista branca (srmapSanitize, no servidor E no jogo): qualquer campo fora da lista é descartado, inclusive em mapas importados
+  por código. Voo, gravidade, velocidade, moedas extras/removidas, steam:false e flags de Lua não existem para a IA.
+- Contraste mínimo: se o tema deixar pista/trilho/obstáculos difíceis de ver, as cores são corrigidas automaticamente.
+- Pedidos como "quero voar" ou "sem moedas" são ignorados e a IA avisa o que ignorou.
+- Mapas da IA NÃO entram nos rankings oficiais (addRank ignora quando o mapa é de IA).
 
-LIMITAÇÃO HONESTA
-Esta versão já mostra a opção no menu e gera/escreve a especificação do mapa. A reprodução jogável desse JSON como pista 3D personalizada e a tela administrativa completa para aprovar/rejeitar os mapas ainda precisam de integração adicional; a geração não altera o ranking oficial.
+ARQUIVOS ALTERADOS
+- functions/api/maps/generate.js (novo prompt + validação)
+- app.js (registro de mapas da IA, estúdio, ranking), style.css (abas)
+
+CONFIGURAÇÃO: igual à anterior (GROQ_API_KEY no EdgeOne, Production, e publicar de novo).
+
+LIMITAÇÕES HONESTAS
+- Os créditos (200/dia, 25 por geração) ainda são controlados no navegador e podem ser burlados. Para uso público, 
+  precisa de login + cobrança no servidor/Firestore.
+- Obstáculos e moedas seguem o gerador do motor; a IA não desenha pistas com layout próprio (isso abriria brecha para vantagem).
+- Não consegui rodar o jogo num navegador aqui. Testei a sintaxe, a validação com entradas maliciosas e o registro/importação
+  de mapas em Node. Teste o botão JOGAR AGORA e o visual em alguns mapas depois de publicar.

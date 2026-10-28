@@ -186,14 +186,15 @@ function drawAIMaps(){
   try{if(localStorage.getItem(dayKey)!==stamp){localStorage.setItem(dayKey,stamp);localStorage.setItem(creditKey,'200')}}catch(_){}
   let credits=200;try{const n=Number(localStorage.getItem(creditKey));credits=Number.isFinite(n)?n:200}catch(_){}
   let currentMap=null, attachments=[], chat=[];
-  card.innerHTML=`<div class="ai-map-head"><div class="eyebrow">SUBWAY RUN · ESTÚDIO CRIATIVO</div><h1>🤖 CRIAR MAPAS COM IA</h1><p>Descreva o mapa, converse com a IA para ajustar e teste a prévia antes de enviar para revisão.</p></div>
+  card.innerHTML=`<div class="ai-map-head"><div class="eyebrow">SUBWAY RUN · ESTÚDIO CRIATIVO</div><h1>🤖 CRIAR MAPAS COM IA</h1><p>Descreva o clima, as cores, o cenário e o veículo do seu mapa. A IA monta o visual e você joga no motor de verdade, com as mesmas regras de todo mundo.</p></div>
   <div class="ai-map-credit">🪙 Créditos de hoje: <b id="aiMapCredits">${Math.max(0,credits)}</b> / 200 <small>· renovação diária às 05:00</small></div>
-  <div class="ai-studio-tabs" role="tablist"><button type="button" class="active" data-tab="chat">💬 Chat IA</button><button type="button" data-tab="preview">🎮 Preview</button><button type="button" data-tab="files">📎 Arquivos e texturas</button></div>
-  <section class="ai-studio-panel" data-panel="chat"><div class="ai-chat-log" id="aiChatLog"><div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva o tema, pistas, obstáculos, moedas e estilo visual. Depois você pode pedir mudanças sem começar do zero.</p></div></div>
-  <label for="aiMapPrompt">Sua mensagem<textarea id="aiMapPrompt" rows="4" maxlength="1600" placeholder="Ex.: Crie uma cidade futurista à noite, com três pistas, trilhos elevados, rampas, moedas e obstáculos justos..."></textarea></label>
-  <button class="btn" id="aiMapGenerate">✨ GERAR MAPA (25 CRÉDITOS)</button><p class="ai-map-hint">A IA só pode criar conteúdo do mapa. Não peça dados privados, segredos, exploits ou vantagens injustas.</p></section>
-  <section class="ai-studio-panel" data-panel="preview" hidden><div id="aiPreviewEmpty" class="ai-preview-empty"><div class="ai-thinking-orb">✦</div><h3>A prévia aparecerá aqui</h3><p>Enquanto a IA trabalha, você pode abrir esta aba e acompanhar o estado da criação.</p></div><div id="aiPreviewWorking" class="ai-preview-empty" hidden><div class="ai-thinking-orb spinning">✦</div><h3>A IA está construindo seu mapa…</h3><p>Estruturando pistas, objetos, obstáculos e moedas. Isso pode levar alguns segundos.</p><div class="ai-progress"><span></span></div></div><div id="aiPreviewReady" hidden><div id="aiMapResult" class="ai-map-result"></div></div></section>
+  <div class="ai-studio-tabs" role="tablist"><button type="button" class="active" data-tab="chat">💬 Chat IA</button><button type="button" data-tab="preview">🎮 Preview</button><button type="button" data-tab="files">📎 Arquivos e texturas</button><button type="button" data-tab="mine">🗺️ Meus mapas</button></div>
+  <section class="ai-studio-panel" data-panel="chat"><div class="ai-chat-log" id="aiChatLog"><div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva o tema, as cores, o cenário, o clima e o veículo que cruza a pista. Depois peça mudanças sem começar do zero.</p></div></div>
+  <label for="aiMapPrompt">Sua mensagem<textarea id="aiMapPrompt" rows="4" maxlength="1600" placeholder="Ex.: Ilha vulcânica no fim da tarde, céu laranja, palmeiras, chuva fina e um bonde cruzando a pista..."></textarea></label>
+  <button class="btn" id="aiMapGenerate">✨ GERAR MAPA (25 CRÉDITOS)</button><p class="ai-map-hint">A IA cria só o visual (cores, cenário, veículo, clima). Moedas, obstáculos, pulo e gravidade são do motor e iguais em todos os mapas: pedidos de voo, gravidade, moedas ou bugs são ignorados. Mapas da IA não entram nos rankings oficiais.</p></section>
+  <section class="ai-studio-panel" data-panel="preview" hidden><div id="aiPreviewEmpty" class="ai-preview-empty"><div class="ai-thinking-orb">✦</div><h3>A prévia aparecerá aqui</h3><p>Enquanto a IA trabalha, você pode abrir esta aba e acompanhar o estado da criação.</p></div><div id="aiPreviewWorking" class="ai-preview-empty" hidden><div class="ai-thinking-orb spinning">✦</div><h3>A IA está construindo seu mapa…</h3><p>Pintando céu, chão, cenário e veículo. Isso pode levar alguns segundos.</p><div class="ai-progress"><span></span></div></div><div id="aiPreviewReady" hidden><div id="aiMapResult" class="ai-map-result"></div></div></section>
   <section class="ai-studio-panel" data-panel="files" hidden><h3>📎 Adicionar arquivos ao mapa</h3><p>Envie texturas (PNG/JPG/WebP) ou arquivos de referência (HTML, CSS, JS, JSON, OBJ, MTL, TXT). A IA recebe texto de arquivos de código para analisá-los; arquivos executáveis não são executados.</p><input id="aiMapFiles" type="file" multiple accept="image/png,image/jpeg,image/webp,.html,.htm,.css,.js,.json,.obj,.mtl,.txt"><div id="aiFileList" class="ai-file-list"><p>Nenhum arquivo anexado.</p></div><p class="ai-map-hint">As texturas podem ser visualizadas nesta sessão. Não envie senhas, chaves de API nem dados pessoais.</p></section>
+  <section class="ai-studio-panel" data-panel="mine" hidden><h3>🗺️ Meus mapas</h3><div id="aiMineList" class="ai-file-list"></div><label>Importar mapa de um amigo<input id="aiImportCode" type="text" maxlength="6000" placeholder="Cole o código SRMAP1:…"></label><button type="button" class="btn g" id="aiImportBtn">IMPORTAR MAPA</button><p class="ai-map-hint">Você guarda até ${AIMAP_MAX} mapas neste aparelho. Mapas importados passam pela mesma validação.</p></section>
   <div id="aiMapStatus" class="msg" role="status">Entre em uma conta conectada para usar o estúdio. A chave da Groq deve ficar apenas no servidor.</div>
   <button class="btn g" id="aiMapBack">VOLTAR AO MENU</button>`;
   const panels=[...card.querySelectorAll('[data-panel]')],tabs=[...card.querySelectorAll('[data-tab]')];
@@ -204,53 +205,30 @@ function drawAIMaps(){
   function renderChat(){chatLog.innerHTML=chat.length?chat.map(m=>`<div class="ai-chat-message ${m.role==='assistant'?'assistant':'user'}"><b>${m.role==='assistant'?'IA Subway Run':'Você'}</b><p>${esc(m.content)}</p></div>`).join(''):'<div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva a primeira versão e depois peça ajustes pelo chat.</p></div>';chatLog.scrollTop=chatLog.scrollHeight}
   function renderFiles(){const box=$('#aiFileList');box.innerHTML=attachments.length?attachments.map((a,i)=>`<div class="ai-file-row"><span>${a.kind==='image'?'🖼️':'📄'} ${esc(a.name)} <small>${Math.round(a.size/1024)} KB</small></span><button type="button" class="btn g" data-remove-file="${i}">Remover</button>${a.kind==='image'&&a.url?`<img src="${a.url}" alt="Prévia de ${esc(a.name)}">`:''}</div>`).join(''):'<p>Nenhum arquivo anexado.</p>';box.querySelectorAll('[data-remove-file]').forEach(b=>b.onclick=()=>{const a=attachments.splice(Number(b.dataset.removeFile),1)[0];if(a&&a.url)URL.revokeObjectURL(a.url);renderFiles()})}
   $('#aiMapFiles').onchange=async e=>{for(const f of [...(e.target.files||[])].slice(0,8)){if(f.size>2*1024*1024){status.textContent=`${f.name} ultrapassa 2 MB e foi ignorado.`;continue}const imageFile=f.type.startsWith('image/');let content='';if(!imageFile){try{content=(await f.text()).slice(0,12000)}catch(_){content='[Não foi possível ler o arquivo como texto]'}}attachments.push({name:f.name,size:f.size,type:f.type,kind:imageFile?'image':'text',content,url:imageFile?URL.createObjectURL(f):''})}renderFiles();e.target.value=''};
-  function renderMap(map){currentMap=map;const result=$('#aiMapResult');result.innerHTML=`<h2>✅ ${esc(map.name||'Mapa criado')}</h2><p>${esc(map.description||'Mapa pronto para teste privado.')}</p><div class="ai-map-preview-wrap"><canvas id="aiMapPreview" width="900" height="420" aria-label="Prévia jogável do mapa"></canvas></div><div class="ai-map-test-controls"><button type="button" class="btn g" data-lane="-1">⬅ ESQUERDA</button><button type="button" class="btn g" data-action="jump">⬆ PULAR</button><button type="button" class="btn g" data-action="slide">⬇ DESLIZAR</button><button type="button" class="btn g" data-lane="1">DIREITA ➡</button></div><p class="ai-map-test-note">Teste privado: os pontos e moedas daqui não alteram o ranking oficial.</p><div class="ai-map-actions"><button type="button" class="btn" id="aiMapReplay">▶ Reiniciar teste</button><button type="button" class="btn g" id="aiMapDetailsBtn">Ver estrutura gerada</button><button type="button" class="btn g" id="aiMapSubmit">Enviar para revisão</button></div><details class="ai-map-details" id="aiMapDetails" hidden><summary>Estrutura JSON</summary><pre class="ai-map-json"></pre></details>`;
-    result.querySelector('pre').textContent=JSON.stringify(map,null,2);startAIMapTest(map,result.querySelector('#aiMapPreview'),result.querySelector('.ai-map-test-note'));
-    result.querySelectorAll('[data-lane]').forEach(b=>b.onclick=()=>result.dispatchEvent(new CustomEvent('aimap-control',{detail:{lane:Number(b.dataset.lane)}})));result.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>result.dispatchEvent(new CustomEvent('aimap-control',{detail:{action:b.dataset.action}})));
-    result.querySelector('#aiMapReplay').onclick=()=>startAIMapTest(map,result.querySelector('#aiMapPreview'),result.querySelector('.ai-map-test-note'));
+  function swatch(cv,m){const g=cv.getContext('2d'),W=cv.width,H=cv.height,hz=H*.52,sk=g.createLinearGradient(0,0,0,hz);sk.addColorStop(0,m.sky[0]);sk.addColorStop(.7,m.sky[1]);sk.addColorStop(1,m.sky[2]);g.fillStyle=sk;g.fillRect(0,0,W,hz);if(m.stars){g.fillStyle='#fff';for(let i=0;i<40;i++)g.fillRect((i*97)%W,(i*53)%(hz*.9),2,2)}g.fillStyle=m.orb;if(m.earth){g.beginPath();g.arc(W*.74,hz*.5,H*.09,0,7);g.fill()}else g.fillRect(W*.74-H*.06,hz*.5-H*.06,H*.12,H*.12);g.fillStyle=m.hill;g.beginPath();g.moveTo(0,hz);g.bezierCurveTo(W*.2,hz-H*.12,W*.4,hz-H*.02,W*.6,hz-H*.1);g.bezierCurveTo(W*.8,hz-H*.16,W*.9,hz-H*.04,W,hz-H*.08);g.lineTo(W,hz);g.fill();(m.bld.length?m.bld:[]).forEach((c,i)=>{g.fillStyle=c;const bw=W*.07,bh=H*(.1+((i*37)%5)*.03);for(const x of [W*(.06+i*.075),W*(.64+i*.08)])g.fillRect(x,hz-bh,bw,bh)});g.fillStyle=m.gnd;g.fillRect(0,hz,W,H-hz);g.fillStyle=m.bed;g.beginPath();g.moveTo(W*.4,hz);g.lineTo(W*.6,hz);g.lineTo(W*.9,H);g.lineTo(W*.1,H);g.fill();g.strokeStyle=m.rail;g.lineWidth=3;for(const k of [.34,.66]){g.beginPath();g.moveTo(W*(.4+.2*k),hz);g.lineTo(W*(.1+.8*k),H);g.stroke()}if(m.rain){g.strokeStyle='rgba(218,238,255,.45)';for(let i=0;i<30;i++){const x=(i*61)%W,y=(i*43)%(H*.9);g.beginPath();g.moveTo(x,y);g.lineTo(x-4,y+12);g.stroke()}}if(m.snow){g.fillStyle='#fff';for(let i=0;i<40;i++){g.beginPath();g.arc((i*73)%W,(i*47)%H,2,0,7);g.fill()}}}
+  function playMap(i){CFG.map=i;save();startGame()}
+  function copyCode(m){const code=aiMapCode(m);if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(code).then(()=>{status.textContent='Código copiado! Seu amigo cola em Meus mapas > Importar.'}).catch(()=>prompt('Copie o código:',code));else prompt('Copie o código:',code)}
+  function renderMine(){const box=$('#aiMineList'),list=MAPS.map((m,i)=>[m,i]).filter(x=>x[1]>=AIMAP_BASE);box.innerHTML=list.length?list.map(([m,i])=>`<div class="ai-file-row"><span style="display:flex;align-items:center;gap:8px"><i style="width:34px;height:22px;border-radius:6px;background:linear-gradient(${m.sky[0]},${m.sky[2]} 60%,${m.gnd} 60%)"></i>${esc(m.n)}</span><span><button type="button" class="btn s" data-mplay="${i}">JOGAR</button> <button type="button" class="btn g" data-mcode="${i}">Código</button> <button type="button" class="btn g" data-mdel="${i}">Excluir</button></span></div>`).join(''):'<p>Você ainda não salvou nenhum mapa.</p>';box.querySelectorAll('[data-mplay]').forEach(b=>b.onclick=()=>playMap(Number(b.dataset.mplay)));box.querySelectorAll('[data-mcode]').forEach(b=>b.onclick=()=>copyCode(MAPS[Number(b.dataset.mcode)]));box.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=()=>{if(confirm('Excluir este mapa do aparelho?')){aiMapRemove(Number(b.dataset.mdel));renderMine()}})}
+  $('#aiImportBtn').onclick=()=>{try{const i=aiMapAdd(aiMapFromCode($('#aiImportCode').value));$('#aiImportCode').value='';renderMine();status.textContent='Mapa importado: '+MAPS[i].n}catch(_){status.textContent='Código inválido. Peça para o amigo copiar de novo.'}};
+  renderMine();
+  function renderMap(map,ignored){map=srmapSanitize(map);currentMap=map;const result=$('#aiMapResult'),extra=[].concat(map.notes||[],(ignored||[]).map(t=>'Ignorado (não permitido): '+t));
+    result.innerHTML=`<h2>✅ ${esc(map.n)}</h2><p>${esc(map.desc||'Mapa pronto para jogar.')}</p><div class="ai-map-preview-wrap"><canvas id="aiMapPreview" width="900" height="420" aria-label="Prévia visual do mapa"></canvas></div><p class="ai-map-test-note">Cenário: ${esc(map.deco)}${map.deco2?' + '+esc(map.deco2):''}${map.veh?' · Veículo: '+esc(map.veh):''}. Joga no motor real, com as mesmas moedas, obstáculos, pulo e gravidade de todos os mapas. Não entra nos rankings oficiais.</p>${extra.length?`<ul class="ai-map-test-note">${extra.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}<div class="ai-map-actions"><button type="button" class="btn" id="aiMapPlay">▶ JOGAR AGORA</button><button type="button" class="btn g" id="aiMapSave">💾 Salvar em Meus mapas</button><button type="button" class="btn g" id="aiMapCopy">📋 Copiar código</button><button type="button" class="btn g" id="aiMapDetailsBtn">Ver estrutura gerada</button><button type="button" class="btn g" id="aiMapSubmit">Enviar para revisão</button></div><details class="ai-map-details" id="aiMapDetails" hidden><summary>Estrutura JSON</summary><pre class="ai-map-json"></pre></details>`;
+    result.querySelector('pre').textContent=JSON.stringify(map,null,2);swatch(result.querySelector('#aiMapPreview'),map);
+    result.querySelector('#aiMapPlay').onclick=()=>{playMap(aiMapAdd(map))};
+    result.querySelector('#aiMapSave').onclick=()=>{const i=aiMapAdd(map);renderMine();status.textContent='Salvo: '+MAPS[i].n+'. Escolha em Meus mapas ou no seletor do menu.'};
+    result.querySelector('#aiMapCopy').onclick=()=>copyCode(map);
     result.querySelector('#aiMapDetailsBtn').onclick=()=>{const d=result.querySelector('#aiMapDetails');d.hidden=!d.hidden};
-    result.querySelector('#aiMapSubmit').onclick=()=>{status.textContent='O envio para a fila administrativa precisa estar conectado ao backend de publicação. Por enquanto, baixe/copie a estrutura para revisão; não foi publicada globalmente.';setTab('chat')};
+    result.querySelector('#aiMapSubmit').onclick=()=>{status.textContent='O envio para a fila administrativa precisa estar conectado ao backend de publicação. Por enquanto, use “Copiar código” para mandar o mapa para revisão.';setTab('chat')};
     $('#aiPreviewEmpty').hidden=true;$('#aiPreviewWorking').hidden=true;$('#aiPreviewReady').hidden=false;setTab('preview')
   }
   $('#aiMapGenerate').onclick=async()=>{
     const prompt=promptEl.value.trim();if(!prompt){status.textContent='Escreva sua ideia ou a mudança que deseja fazer.';return}if(prompt.length<12){status.textContent='Escreva pelo menos 12 caracteres.';return}if(credits<25){status.textContent='Seus créditos de hoje acabaram. A renovação está prevista para as 05:00.';return}if(!(ACC&&ACC.online)){status.textContent='Entre em uma conta conectada ao servidor para continuar.';return}
     const btn=$('#aiMapGenerate');btn.disabled=true;$('#aiPreviewEmpty').hidden=true;$('#aiPreviewReady').hidden=true;$('#aiPreviewWorking').hidden=false;setTab('preview');status.textContent='A IA está trabalhando no mapa…';chat.push({role:'user',content:prompt});renderChat();
     try{const attachmentPayload=attachments.filter(a=>a.kind==='text').map(a=>({name:a.name,content:a.content}));const response=await fetch('/api/maps/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,currentMap,attachments:attachmentPayload})});const payload=await response.json().catch(()=>({error:'Resposta inválida do servidor.'}));if(!response.ok||!payload||!payload.map)throw new Error((payload&&payload.error)||('Falha HTTP '+response.status));
-      currentMap=payload.map;credits=Math.max(0,credits-25);try{localStorage.setItem(creditKey,String(credits));localStorage.setItem(dayKey,stamp)}catch(_){}$('#aiMapCredits').textContent=credits;chat.push({role:'assistant',content:`Mapa atualizado: ${currentMap.name||'Mapa novo'}. ${currentMap.description||''} Abra a aba Preview para testar. A estrutura está disponível em “Ver estrutura gerada”.`});renderChat();renderMap(currentMap);promptEl.value='';status.textContent='Mapa gerado. Você pode voltar ao chat e pedir alterações; cada geração/alteração custa 25 créditos.';
+      currentMap=srmapSanitize(payload.map);credits=Math.max(0,credits-25);try{localStorage.setItem(creditKey,String(credits));localStorage.setItem(dayKey,stamp)}catch(_){}$('#aiMapCredits').textContent=credits;chat.push({role:'assistant',content:`Mapa atualizado: ${currentMap.name||'Mapa novo'}. ${currentMap.description||''} Toque em JOGAR AGORA na aba Preview.${(payload.ignoredRequests||[]).length?' Ignorei pedidos que dariam vantagem: '+payload.ignoredRequests.join('; ')+'.':''}`});renderChat();renderMap(currentMap,payload.ignoredRequests);promptEl.value='';status.textContent='Mapa gerado. Você pode voltar ao chat e pedir alterações; cada geração/alteração custa 25 créditos.';
     }catch(e){$('#aiPreviewWorking').hidden=true;$('#aiPreviewEmpty').hidden=false;setTab('chat');status.textContent='Não foi possível gerar: '+String(e&&e.message||e)+' Verifique a função do EdgeOne e a variável GROQ_API_KEY.'}
     finally{btn.disabled=false}
   };
-}
-function startAIMapTest(map,canvas,note){
-  if(!canvas)return;
-  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height,host=canvas.closest('.ai-map-result');
-  let lane=1,score=0,hit=0,frame=0,jump=0,slide=0,last=performance.now(),running=true;
-  const lanes=Array.isArray(map.lanes)?map.lanes:[];
-  const palette=String(map.theme||'').toLowerCase().includes('neon')?['#19e7ff','#ff4dce','#b6ff54']:['#54d6a0','#e4b85d','#8bc8ff'];
-  const items=[];
-  for(let l=0;l<3;l++){
-    const data=lanes[l]||{},obs=Array.isArray(data.obstacles)&&data.obstacles.length?data.obstacles:['barreira'];
-    for(let j=0;j<Math.min(5,obs.length+1);j++)items.push({lane:l,z:0.22+j*.145,type:'obstacle',label:String(obs[j%obs.length]||'obstáculo')});
-    for(let j=0;j<Math.min(7,Number(data.coins)||4);j++)items.push({lane:l,z:0.14+j*.115,type:'coin'});
-  }
-  function move(d){lane=Math.max(0,Math.min(2,lane+d))}
-  function control(e){if(e.detail&&Number.isFinite(e.detail.lane))move(e.detail.lane);if(e.detail&&e.detail.action==='jump')jump=28;if(e.detail&&e.detail.action==='slide')slide=24}
-  function key(e){if(!canvas.isConnected)return;const k=e.key.toLowerCase();if(['arrowleft','arrowright','arrowdown',' ','a','d','arrowup'].includes(k))e.preventDefault();if(k==='arrowleft'||k==='a')move(-1);if(k==='arrowright'||k==='d')move(1);if(k===' '||k==='arrowup')jump=28;if(k==='arrowdown')slide=24}
-  host.addEventListener('aimap-control',control);window.addEventListener('keydown',key);
-  function poly(points,color){ctx.fillStyle=color;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill()}
-  function draw(now){if(!canvas.isConnected||!running){window.removeEventListener('keydown',key);host.removeEventListener('aimap-control',control);return}
-    const dt=Math.min(2,(now-last)/16.67);last=now;frame+=dt;score+=dt*.08;if(jump>0)jump-=dt;if(slide>0)slide-=dt;
-    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#101b43');g.addColorStop(1,'#050814');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-    for(let i=0;i<65;i++){ctx.globalAlpha=.25+(i%5)*.12;ctx.fillStyle=i%3===0?palette[1]:'#b7d8ff';ctx.fillRect((i*137+Math.sin(i*3.1)*30)%W,(i*47)%220,2,2)}ctx.globalAlpha=1;
-    poly([[W*.37,105],[W*.63,105],[W*.96,H],[W*.04,H]],'#1b2540');
-    for(let i=0;i<=3;i++){ctx.strokeStyle=i===0||i===3?'#647ba8':palette[0];ctx.lineWidth=i===0||i===3?4:2;ctx.beginPath();ctx.moveTo(W*(.37+i*.26/3),105);ctx.lineTo(W*(.04+i*.92/3),H);ctx.stroke()}
-    for(let i=0;i<9;i++){const y=110+((i*48+frame*12)%330),t=(y-105)/(H-105),half=W*(.13+.33*t);ctx.strokeStyle='rgba(160,190,255,.13)';ctx.beginPath();ctx.moveTo(W/2-half,y);ctx.lineTo(W/2+half,y);ctx.stroke()}
-    items.forEach((it,i)=>{const z=(it.z+frame*.0035)%1,y=110+z*300,half=W*(.13+.33*z),x=W/2+(it.lane-1)*half*.66,size=9+z*34;if(it.type==='coin'){ctx.fillStyle='#ffd84a';ctx.beginPath();ctx.arc(x,y,size*.28,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff2a8';ctx.lineWidth=3;ctx.stroke()}else{ctx.fillStyle=palette[it.lane];ctx.fillRect(x-size*.6,y-size*.65,size*1.2,size*1.3);ctx.fillStyle='#11182b';ctx.fillRect(x-size*.35,y-size*.4,size*.7,size*.25);if(z>.92&&it.lane===lane&&jump<1&&slide<1&&Math.floor(frame)%90===i%90){hit++;it.z=-2}}});
-    const px=W/2+(lane-1)*W*.29,py=H-56-(jump>0?Math.sin((jump/28)*Math.PI)*52:0);ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(px,H-34,25,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f3f7ff';ctx.fillRect(px-13,py-31,26,30);ctx.fillStyle=palette[1];ctx.fillRect(px-16,py-48,32,21);ctx.fillStyle='#18233e';ctx.fillRect(px-8,py-41,5,5);ctx.fillRect(px+4,py-41,5,5);if(slide>0){ctx.fillStyle='#ffe36a';ctx.fillRect(px-22,py-7,44,8)}
-    ctx.fillStyle='#fff';ctx.font='bold 18px system-ui';ctx.fillText('TESTE PRIVADO • '+String(map.difficulty||'médio').toUpperCase(),18,28);ctx.font='15px system-ui';ctx.fillText('Distância: '+Math.floor(score)+' m | Obstáculos: '+hit+' | Pista '+(lane+1)+'/3',18,52);
-    if(note)note.textContent='Teste privado ativo — ← → ou A/D muda de pista, espaço/↑ pula, ↓ desliza. Distância: '+Math.floor(score)+' m. Nada é enviado ao ranking oficial.';requestAnimationFrame(draw)
-  }
-  requestAnimationFrame(draw);
 }
 
 function roomSend(m){if(MATCH.socket)MATCH.socket.send(m)}
@@ -979,6 +957,64 @@ MAPS.push(
   { n:'Cidade Neon', sky:['#070921','#18134c','#56266d'], orb:'#ff4fc8', gnd:'#17172f', bed:'#292747', rail:'#4ff0ff', bld:['#ff3dcb','#4ff0ff','#7a5cff','#ffd21f'], deco:'city', deco2:'city', stars:true, nocl:true, cyber:true }
 );
 MAPS[0].deco2 = 'house'; MAPS[4].deco2 = 'palm'; MAPS[1].veh = 'bus'; MAPS[2].veh = 'ghost'; MAPS[3].veh = 'sled'; MAPS[6].veh = 'buggy'; MAPS[7].veh = 'logtruck'; MAPS[8].veh = 'minecart'; MAPS[9].veh = 'bullet'; MAPS[11].veh = 'metro'; MAPS[4].veh = 'bonde'; MAPS[5].veh = 'wagon'; MAPS[10].veh = 'ufo'; MAPS[12].veh = 'ufo'; MAPS[1].deco2 = 'house'; MAPS[2].deco2 = 'pine'; MAPS[6].deco2 = 'palm'; MAPS[7].deco2 = 'voxtree';
+/* ===== SRMAP: validação de mapas criados por IA =====
+   Um mapa de IA é SÓ um tema visual (igual aos seus MAPS): cores, cenário, veículo e clima.
+   Obstáculos, moedas, velocidade, pulo e gravidade continuam sendo do motor do jogo, iguais em todos os mapas.
+   Qualquer campo que não esteja na lista abaixo é descartado, então a IA (ou um JSON colado) não consegue
+   criar voo, gravidade, velocidade, moedas extras/removidas, atalhos nem código. */
+const SRMAP_DECO = ['city', 'cactus', 'palm', 'pine', 'rock', 'crater', 'voxtree', 'house'];
+const SRMAP_VEH = ['bus', 'ghost', 'sled', 'buggy', 'logtruck', 'minecart', 'bullet', 'metro', 'bonde', 'wagon', 'ufo'];
+const SRMAP_FLAGS = ['rain', 'snow', 'stars', 'nocl', 'cyber', 'vox', 'earth'];
+function srmapHex(v, fb) {
+  let s = String(v == null ? '' : v).trim().toLowerCase();
+  if (/^#[0-9a-f]{3}$/.test(s)) s = '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+  return /^#[0-9a-f]{6}$/.test(s) ? s : fb;
+}
+function srmapRGB(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+function srmapToHex(r) { return '#' + r.map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join(''); }
+function srmapMix(a, b, t) { const A = srmapRGB(a), B = srmapRGB(b); return srmapToHex(A.map((x, i) => x + (B[i] - x) * t)); }
+function srmapLum(h) { return srmapRGB(h).map(x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }).reduce((s, x, i) => s + x * [.2126, .7152, .0722][i], 0); }
+function srmapContrast(a, b) { const x = srmapLum(a), y = srmapLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+function srmapText(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f<>`\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
+function srmapSanitize(raw) {
+  const notes = [], r = raw && typeof raw === 'object' ? raw : {};
+  const name = srmapText(r.name, 28) || 'Mapa da IA';
+  const sky0 = Array.isArray(r.sky) ? r.sky : [];
+  const sky = [srmapHex(sky0[0], '#4fc3ff'), srmapHex(sky0[1], '#8fdcff'), srmapHex(sky0[2], '#d4f3ff')];
+  const orb = srmapHex(r.orb, '#fff6b8');
+  let gnd = srmapHex(r.gnd, '#a8e05f'), bed = srmapHex(r.bed, '#4d5568'), rail = srmapHex(r.rail, '#cfd6e6');
+  // Justiça visual: a pista, o trilho e os obstáculos precisam continuar visíveis em qualquer tema.
+  if (srmapLum(bed) > .45) { bed = srmapMix(bed, '#000000', .45); notes.push('Leito da pista escurecido para os obstáculos aparecerem.'); }
+  if (srmapLum(bed) < .012) { bed = srmapMix(bed, '#ffffff', .18); notes.push('Leito da pista clareado para não sumir no escuro.'); }
+  if (srmapContrast(bed, gnd) < 1.3) { gnd = srmapLum(bed) > .2 ? srmapMix(gnd, '#000000', .4) : srmapMix(gnd, '#ffffff', .4); notes.push('Chão ajustado para a pista se destacar.'); }
+  if (srmapContrast(rail, bed) < 3) { rail = srmapContrast('#ffffff', bed) >= srmapContrast('#101428', bed) ? '#ffffff' : '#101428'; notes.push('Trilho ajustado para ficar visível.'); }
+  const bld = (Array.isArray(r.bld) ? r.bld : []).slice(0, 4).map(c => srmapHex(c, null)).filter(Boolean);
+  const deco = SRMAP_DECO.includes(r.deco) ? r.deco : 'city';
+  const deco2 = SRMAP_DECO.includes(r.deco2) ? r.deco2 : '';
+  const veh = SRMAP_VEH.includes(r.veh) ? r.veh : '';
+  const map = { name, n: '🤖 ' + name, ai: true, desc: srmapText(r.description || r.desc, 160), sky, orb, gnd, bed, rail, bld, deco, hill: srmapMix(gnd, sky[2], .35), win: srmapHex(r.win, '#fff1ad') };
+  if (deco2) map.deco2 = deco2;
+  if (veh) map.veh = veh;
+  SRMAP_FLAGS.forEach(f => { if (r[f] === true) map[f] = true; });
+  if (map.deco === 'city' && !map.bld.length) map.bld = [srmapMix(gnd, '#ffffff', .25), srmapMix(sky[0], '#808080', .5), srmapMix(rail, '#202040', .5)];
+  map.notes = notes;
+  return map;
+}
+
+// ----- Mapas criados pela IA: ficam no aparelho, entram na lista de mapas e rodam no motor real -----
+const AIMAP_KEY = 'sr_ai_maps_v1', AIMAP_MAX = 10, AIMAP_BASE = MAPS.length;
+function aiMapsStore() { try { localStorage.setItem(AIMAP_KEY, JSON.stringify(MAPS.slice(AIMAP_BASE).map(({ notes, ...m }) => m))); } catch (_) {} }
+function aiMapAdd(raw) {
+  const m = srmapSanitize(raw), same = MAPS.findIndex((x, i) => i >= AIMAP_BASE && x.name === m.name && JSON.stringify(x.sky) === JSON.stringify(m.sky));
+  if (same >= 0) return same;
+  if (MAPS.length - AIMAP_BASE >= AIMAP_MAX) { MAPS.splice(AIMAP_BASE, 1); if (CFG.map > AIMAP_BASE) CFG.map--; else if (CFG.map === AIMAP_BASE) CFG.map = 0; }
+  MAPS.push(m); aiMapsStore(); return MAPS.length - 1;
+}
+function aiMapRemove(i) { if (i < AIMAP_BASE || i >= MAPS.length) return; MAPS.splice(i, 1); if (CFG.map === i) CFG.map = 0; else if (CFG.map > i) CFG.map--; aiMapsStore(); save(); }
+function aiMapCode(m) { const { notes, hill, ai, n, ...spec } = m; return 'SRMAP1:' + btoa(unescape(encodeURIComponent(JSON.stringify(spec)))); }
+function aiMapFromCode(t) { t = String(t || '').trim(); if (!t.startsWith('SRMAP1:') || t.length > 6000) throw new Error('Código inválido.'); return JSON.parse(decodeURIComponent(escape(atob(t.slice(7))))); }
+try { const a = JSON.parse(localStorage.getItem(AIMAP_KEY) || '[]'); if (Array.isArray(a)) a.slice(0, AIMAP_MAX).forEach(x => MAPS.push(srmapSanitize(x))); } catch (_) {}
+if (!(CFG.map >= 0 && CFG.map < MAPS.length)) CFG.map = 0;
 // Na Lua a gravidade é menor: pulos mais longos e flutuantes
 const AG = () => { const c = CHARS[CFG.char]; return c && c.agile > 1 ? Math.min(1.5, c.agile) : 1; }; // skins ágeis (campo agile do painel)
 const GRAV = () => 2600 / (1 + (AG() - 1) * .6), JV = () => 950; // Lua: mesma gravidade e pulo dos outros mapas
@@ -1179,6 +1215,7 @@ mpFetchAdmin();
 function addRank(sc) {
   const t = Math.floor(Math.max(ncBest, ncCur) / 1000);
   lastNc = t; lastNcNew = false;
+  if (MAPS[CFG.map] && MAPS[CFG.map].ai) return; // mapas criados por IA não entram nos rankings oficiais
   // O modo NOCOIN só registra tentativas de pelo menos 1 segundo sem moedas.
   if (t < 1) return;
   const L = myRank();
@@ -1733,7 +1770,7 @@ function drawBiomeHorizon(M, now) {
     g.fillStyle='#737989';g.beginPath();g.ellipse(W*.23,h*.94,W*.22,h*.11,0,Math.PI,Math.PI*2);g.fill();g.beginPath();g.ellipse(W*.78,h*.96,W*.3,h*.1,0,Math.PI,Math.PI*2);g.fill();
     g.strokeStyle='#d4d8e4';g.lineWidth=2*U;g.beginPath();g.ellipse(W*.24,h*.94,W*.13,h*.045,0,0,Math.PI*2);g.stroke();
   } else {
-    land('#a56b64',h*.14,8*U,18*U);
+    land(M.ai&&M.hill||'#a56b64',h*.14,8*U,18*U);
   }
 }
 
