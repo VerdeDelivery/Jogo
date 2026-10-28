@@ -1,0 +1,13 @@
+SUBWAY RUN — UPDATE DE 7 MAPAS
+
+Novos mapas:
+1. Minecraft: Reino dos Blocos — visual voxel e carrinho de mina.
+2. Halloween: Parque do Terror — noite, chuva, casas assustadoras e trem fantasma.
+3. Cidade das Nuvens — céu claro e trem-bala.
+4. Reino dos Doces — cores doces e buggy personalizado.
+5. Atlântida Perdida — cenário submarino e OVNI temático.
+6. Selva dos Dinossauros — floresta selvagem e caminhão de toras.
+7. Cyberpunk: Neon Rush — cidade neon e metrô.
+
+A atualização reaproveita os veículos e o motor já existentes no jogo para preservar a jogabilidade. Os obstáculos continuam sendo gerados pelo sistema normal do jogo; esta atualização adiciona os sete temas/mapas, não um sistema novo de animação de jumpscare.
+Instalação: faça backup da pasta atual e substitua os arquivos pelo conteúdo desta pasta. Mantenha suas configurações do Firebase e regras de banco existentes.

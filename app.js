@@ -1019,6 +1019,69 @@ MAPS.push(
   { n:'Cidade Neon', sky:['#070921','#18134c','#56266d'], orb:'#ff4fc8', gnd:'#17172f', bed:'#292747', rail:'#4ff0ff', bld:['#ff3dcb','#4ff0ff','#7a5cff','#ffd21f'], deco:'city', deco2:'city', stars:true, nocl:true, cyber:true }
 );
 MAPS[0].deco2 = 'house'; MAPS[4].deco2 = 'palm'; MAPS[1].veh = 'bus'; MAPS[2].veh = 'ghost'; MAPS[3].veh = 'sled'; MAPS[6].veh = 'buggy'; MAPS[7].veh = 'logtruck'; MAPS[8].veh = 'minecart'; MAPS[9].veh = 'bullet'; MAPS[11].veh = 'metro'; MAPS[4].veh = 'bonde'; MAPS[5].veh = 'wagon'; MAPS[10].veh = 'ufo'; MAPS[12].veh = 'ufo'; MAPS[1].deco2 = 'house'; MAPS[2].deco2 = 'pine'; MAPS[6].deco2 = 'palm'; MAPS[7].deco2 = 'voxtree';
+
+// ===== UPDATE 7 MAPAS NOVOS — TEMPORADA H4X =====
+// Cada mapa usa um veículo temático já suportado pelo motor do jogo.
+MAPS.push(
+  {
+    n: 'Minecraft: Reino dos Blocos ⛏️',
+    sky: ['#67c7ff', '#a4e4ff', '#e4ffd1'], orb: '#fff3a1',
+    gnd: '#55a844', bed: '#79553b', rail: '#b9c6d4',
+    bld: ['#4b8c45', '#8b5a3c', '#5f7d38', '#a77a50'],
+    deco: 'voxtree', deco2: 'house', vox: true, veh: 'minecart',
+    stars: false
+  },
+  {
+    n: 'Halloween: Parque do Terror 🎃',
+    sky: ['#100b20', '#321044', '#8b2b37'], orb: '#ff9b35',
+    gnd: '#30233a', bed: '#211d2a', rail: '#ff7a1a',
+    bld: ['#3b254b', '#58233f', '#7a302b', '#29243d'],
+    deco: 'pine', deco2: 'house', veh: 'ghost',
+    stars: true, nocl: true, rain: true, win: '#ff7a1a',
+    halloween: true
+  },
+  {
+    n: 'Cidade das Nuvens ☁️',
+    sky: ['#68aaff', '#b9e7ff', '#fff4db'], orb: '#ffffff',
+    gnd: '#c5d9ed', bed: '#667b9c', rail: '#ffffff',
+    bld: ['#8cc7ed', '#b5a7e8', '#f0b7d4', '#8fd9cf'],
+    deco: 'voxtree', deco2: 'city', veh: 'bullet',
+    stars: false, nocl: true
+  },
+  {
+    n: 'Reino dos Doces 🍭',
+    sky: ['#ff77b7', '#ffc1e1', '#fff0fa'], orb: '#fff8b5',
+    gnd: '#f4a7cf', bed: '#956b9c', rail: '#4ff0ff',
+    bld: ['#ff8bc2', '#9d80e8', '#ffd36e', '#79d9df'],
+    deco: 'house', deco2: 'voxtree', veh: 'buggy',
+    stars: true
+  },
+  {
+    n: 'Atlântida Perdida 🌊',
+    sky: ['#063b66', '#087f9b', '#73d8d0'], orb: '#d6fff5',
+    gnd: '#197f78', bed: '#245a70', rail: '#68fff0',
+    bld: ['#176d86', '#25a5a0', '#4166a8', '#65b9b0'],
+    deco: 'rock', deco2: 'house', veh: 'ufo',
+    stars: true, nocl: true
+  },
+  {
+    n: 'Selva dos Dinossauros 🦖',
+    sky: ['#1e754e', '#75b85b', '#d9e99b'], orb: '#fff0a6',
+    gnd: '#2f7b3d', bed: '#5b452d', rail: '#ffd66b',
+    bld: ['#356b3d', '#547d42', '#8b6941', '#41604b'],
+    deco: 'pine', deco2: 'voxtree', veh: 'logtruck',
+    rain: true
+  },
+  {
+    n: 'Cyberpunk: Neon Rush 🌆',
+    sky: ['#080821', '#25104f', '#681b71'], orb: '#ff4fc8',
+    gnd: '#15152d', bed: '#292747', rail: '#4ff0ff',
+    bld: ['#ff3dcb', '#4ff0ff', '#7a5cff', '#ffd21f'],
+    deco: 'city', deco2: 'city', veh: 'metro',
+    stars: true, nocl: true, cyber: true, win: '#ffffff'
+  }
+);
+
 /* ===== SRMAP: validação de mapas criados por jogadores/IA =====
    Um mapa = tema visual (cores, cenário, veículo, clima) + layout (linhas de obstáculos nas 3 pistas).
    O motor do jogo continua sendo o mesmo para todos: velocidade, pulo, gravidade e física não são editáveis.
