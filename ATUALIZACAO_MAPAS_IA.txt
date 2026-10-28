@@ -1,30 +1,41 @@
-SUBWAY RUN - MAPAS COM IA v2 (jogáveis no motor real, sem vantagens)
+SUBWAY RUN - EDITOR DE MAPAS + IA (v3)
 
-O QUE MUDOU
-- A IA agora cria mapas no MESMO formato dos seus mapas oficiais: céu, sol/lua, chão, leito, trilho, prédios,
-  cenário lateral (city, cactus, palm, pine, rock, crater, voxtree, house), veículo que cruza a pista
-  (bus, ghost, sled, buggy, logtruck, minecart, bullet, metro, bonde, wagon, ufo) e clima (chuva, neve, estrelas...).
-- O mapa gerado roda no motor 3D de verdade (botão "JOGAR AGORA"), não mais numa prévia 2D.
-- "Meus mapas": cada jogador guarda até 10 mapas no aparelho, joga, exclui e compartilha por código (SRMAP1:...).
-- O prompt da IA ganhou exemplos dos seus mapas (Deserto, Cidade Neon, Neve, São Paulo) e temperatura maior, para mais criatividade.
+O QUE É
+Os jogadores criam o PRÓPRIO mapa de verdade (layout + visual) e jogam no mesmo motor dos seus mapas. Menu > CRIAR MAPAS COM IA.
 
-COMO FICA SEM VANTAGEM / SEM BUG
-- A IA só devolve tema visual. Moedas, obstáculos, velocidade, pulo e gravidade são do motor e iguais em todos os mapas.
-- Lista branca (srmapSanitize, no servidor E no jogo): qualquer campo fora da lista é descartado, inclusive em mapas importados
-  por código. Voo, gravidade, velocidade, moedas extras/removidas, steam:false e flags de Lua não existem para a IA.
-- Contraste mínimo: se o tema deixar pista/trilho/obstáculos difíceis de ver, as cores são corrigidas automaticamente.
-- Pedidos como "quero voar" ou "sem moedas" são ignorados e a IA avisa o que ignorou.
-- Mapas da IA NÃO entram nos rankings oficiais (addRank ignora quando o mapa é de IA).
+ABAS DO ESTÚDIO
+- 🛠️ Editor (estilo "studio"): escolha a ferramenta (barreira, barra, muro, trem curto/médio/longo, moedas, veículo, apagar)
+  e toque nas células. Cada linha tem 3 pistas; dá para mover, inserir, apagar linhas e escolher o espaço até a próxima.
+  Tema: 7 cores, cenário (+ cenário 2), veículo e clima (chuva, neve, estrelas, sem nuvens, cyber, cubos, planeta).
+  Botões: Testar no jogo, Salvar, Layout aleatório justo, Pedir ajuste à IA, Novo mapa.
+- 💬 Chat IA: descreve a ideia e a IA monta tema + layout (24 a 60 linhas). Pode pedir ajustes no mapa que está aberto no editor.
+- 🗺️ Meus mapas: até 10 por aparelho; jogar, excluir, copiar CÓDIGO (SRMAP1:...) e importar o de um amigo.
+- O mapa aparece no seletor de mapas do menu, com o ícone 🤖.
+
+COMO O MAPA É JOGADO
+- As linhas viram os mesmos objetos do motor (barrier, bar, wall, train, coin, veículo). Física, pulo, gravidade e velocidade
+  são as do jogo, iguais em todos os mapas. Quando o layout acaba, ele repete e a velocidade continua subindo.
+
+SEM VANTAGEM / SEM BUG
+- Lista branca de campos (srmapSanitize), no servidor E no jogo, inclusive em mapas importados: não existe campo de voo,
+  gravidade, velocidade, pulo ou atalho. Qualquer coisa fora da lista é descartada.
+- Verificador de justiça: toda linha precisa ter uma passagem alcançável (no máx. 1 pista de diferença da linha anterior).
+  Se faltar, o editor abre uma pista sozinho e avisa. A pista do veículo fica livre nas 2 linhas seguintes.
+- Contraste mínimo de pista/trilho/chão para os obstáculos nunca ficarem escondidos.
+- Mapas de jogadores NÃO dão moedas da carteira, NÃO alteram o recorde geral e NÃO entram nos rankings (semanal/geral).
+  (As moedas do mapa existem só como parte do desafio. Se quiser mudar isso, é o trecho "aiRun" na função crash e a linha
+  "mapas criados por IA" em addRank, ambos no app.js.)
+- A IA ignora pedidos de voo/gravidade/bug e informa o que ignorou.
 
 ARQUIVOS ALTERADOS
-- functions/api/maps/generate.js (novo prompt + validação)
-- app.js (registro de mapas da IA, estúdio, ranking), style.css (abas)
+- functions/api/maps/generate.js (prompt com layout + validação), app.js (editor, motor, registro dos mapas), style.css.
 
-CONFIGURAÇÃO: igual à anterior (GROQ_API_KEY no EdgeOne, Production, e publicar de novo).
+CONFIGURAÇÃO: igual à anterior (GROQ_API_KEY no EdgeOne, Production, e publicar de novo). O Editor funciona sem IA e sem conta.
 
 LIMITAÇÕES HONESTAS
-- Os créditos (200/dia, 25 por geração) ainda são controlados no navegador e podem ser burlados. Para uso público, 
-  precisa de login + cobrança no servidor/Firestore.
-- Obstáculos e moedas seguem o gerador do motor; a IA não desenha pistas com layout próprio (isso abriria brecha para vantagem).
-- Não consegui rodar o jogo num navegador aqui. Testei a sintaxe, a validação com entradas maliciosas e o registro/importação
-  de mapas em Node. Teste o botão JOGAR AGORA e o visual em alguns mapas depois de publicar.
+- Créditos da IA (200/dia, 25 por geração) ainda são controlados no navegador e podem ser burlados. Para uso público, precisa
+  de login + cobrança no servidor.
+- Mapas ficam salvos no aparelho (e se compartilham por código). Não existe galeria pública de mapas; isso exigiria
+  moderação e banco de dados. O botão "Enviar para revisão" ainda não está ligado ao backend.
+- Testei no Chromium (abrir o editor, pintar, testar, salvar, jogar com veículo): sem erros de JavaScript. Não testei com seu
+  Firebase real nem a chamada à Groq (sem rede aqui). Teste o chat da IA depois de publicar.

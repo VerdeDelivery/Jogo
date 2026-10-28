@@ -186,33 +186,81 @@ function drawAIMaps(){
   try{if(localStorage.getItem(dayKey)!==stamp){localStorage.setItem(dayKey,stamp);localStorage.setItem(creditKey,'200')}}catch(_){}
   let credits=200;try{const n=Number(localStorage.getItem(creditKey));credits=Number.isFinite(n)?n:200}catch(_){}
   let currentMap=null, attachments=[], chat=[];
-  card.innerHTML=`<div class="ai-map-head"><div class="eyebrow">SUBWAY RUN · ESTÚDIO CRIATIVO</div><h1>🤖 CRIAR MAPAS COM IA</h1><p>Descreva o clima, as cores, o cenário e o veículo do seu mapa. A IA monta o visual e você joga no motor de verdade, com as mesmas regras de todo mundo.</p></div>
+  card.innerHTML=`<div class="ai-map-head"><div class="eyebrow">SUBWAY RUN · ESTÚDIO CRIATIVO</div><h1>🤖 CRIAR MAPAS COM IA</h1><p>Monte o seu mapa linha por linha no Editor, ou descreva a ideia e a IA cria tema e layout. Você joga no motor de verdade, com a mesma física de todos os mapas.</p></div>
   <div class="ai-map-credit">🪙 Créditos de hoje: <b id="aiMapCredits">${Math.max(0,credits)}</b> / 200 <small>· renovação diária às 05:00</small></div>
-  <div class="ai-studio-tabs" role="tablist"><button type="button" class="active" data-tab="chat">💬 Chat IA</button><button type="button" data-tab="preview">🎮 Preview</button><button type="button" data-tab="files">📎 Arquivos e texturas</button><button type="button" data-tab="mine">🗺️ Meus mapas</button></div>
-  <section class="ai-studio-panel" data-panel="chat"><div class="ai-chat-log" id="aiChatLog"><div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva o tema, as cores, o cenário, o clima e o veículo que cruza a pista. Depois peça mudanças sem começar do zero.</p></div></div>
-  <label for="aiMapPrompt">Sua mensagem<textarea id="aiMapPrompt" rows="4" maxlength="1600" placeholder="Ex.: Ilha vulcânica no fim da tarde, céu laranja, palmeiras, chuva fina e um bonde cruzando a pista..."></textarea></label>
-  <button class="btn" id="aiMapGenerate">✨ GERAR MAPA (25 CRÉDITOS)</button><p class="ai-map-hint">A IA cria só o visual (cores, cenário, veículo, clima). Moedas, obstáculos, pulo e gravidade são do motor e iguais em todos os mapas: pedidos de voo, gravidade, moedas ou bugs são ignorados. Mapas da IA não entram nos rankings oficiais.</p></section>
-  <section class="ai-studio-panel" data-panel="preview" hidden><div id="aiPreviewEmpty" class="ai-preview-empty"><div class="ai-thinking-orb">✦</div><h3>A prévia aparecerá aqui</h3><p>Enquanto a IA trabalha, você pode abrir esta aba e acompanhar o estado da criação.</p></div><div id="aiPreviewWorking" class="ai-preview-empty" hidden><div class="ai-thinking-orb spinning">✦</div><h3>A IA está construindo seu mapa…</h3><p>Pintando céu, chão, cenário e veículo. Isso pode levar alguns segundos.</p><div class="ai-progress"><span></span></div></div><div id="aiPreviewReady" hidden><div id="aiMapResult" class="ai-map-result"></div></div></section>
+  <div class="ai-studio-tabs" role="tablist"><button type="button" class="active" data-tab="chat">💬 Chat IA</button><button type="button" data-tab="preview">🎮 Preview</button><button type="button" data-tab="editor">🛠️ Editor</button><button type="button" data-tab="files">📎 Arquivos e texturas</button><button type="button" data-tab="mine">🗺️ Meus mapas</button></div>
+  <section class="ai-studio-panel" data-panel="chat"><div class="ai-chat-log" id="aiChatLog"><div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva o tema, o clima e como quer os obstáculos (ex.: corredor de trens no meio, barreiras no final). Depois peça mudanças sem começar do zero.</p></div></div>
+  <label for="aiMapPrompt">Sua mensagem<textarea id="aiMapPrompt" rows="4" maxlength="1600" placeholder="Ex.: Ilha vulcânica no fim da tarde, céu laranja, palmeiras, começa fácil e termina com muitos trens e barras..."></textarea></label>
+  <button class="btn" id="aiMapGenerate">✨ GERAR MAPA (25 CRÉDITOS)</button><p class="ai-map-hint">A IA cria tema e layout, mas pulo, gravidade e velocidade são do motor e iguais em todos os mapas: pedidos de voo, gravidade ou bugs são ignorados. Mapas de jogadores não dão moedas da carteira nem entram nos rankings oficiais.</p></section>
+  <section class="ai-studio-panel" data-panel="preview" hidden><div id="aiPreviewEmpty" class="ai-preview-empty"><div class="ai-thinking-orb">✦</div><h3>A prévia aparecerá aqui</h3><p>Enquanto a IA trabalha, você pode abrir esta aba e acompanhar o estado da criação.</p></div><div id="aiPreviewWorking" class="ai-preview-empty" hidden><div class="ai-thinking-orb spinning">✦</div><h3>A IA está construindo seu mapa…</h3><p>Montando tema e layout do mapa. Isso pode levar alguns segundos.</p><div class="ai-progress"><span></span></div></div><div id="aiPreviewReady" hidden><div id="aiMapResult" class="ai-map-result"></div></div></section>
   <section class="ai-studio-panel" data-panel="files" hidden><h3>📎 Adicionar arquivos ao mapa</h3><p>Envie texturas (PNG/JPG/WebP) ou arquivos de referência (HTML, CSS, JS, JSON, OBJ, MTL, TXT). A IA recebe texto de arquivos de código para analisá-los; arquivos executáveis não são executados.</p><input id="aiMapFiles" type="file" multiple accept="image/png,image/jpeg,image/webp,.html,.htm,.css,.js,.json,.obj,.mtl,.txt"><div id="aiFileList" class="ai-file-list"><p>Nenhum arquivo anexado.</p></div><p class="ai-map-hint">As texturas podem ser visualizadas nesta sessão. Não envie senhas, chaves de API nem dados pessoais.</p></section>
+  <section class="ai-studio-panel" data-panel="editor" hidden><div id="edBox"></div></section>
   <section class="ai-studio-panel" data-panel="mine" hidden><h3>🗺️ Meus mapas</h3><div id="aiMineList" class="ai-file-list"></div><label>Importar mapa de um amigo<input id="aiImportCode" type="text" maxlength="6000" placeholder="Cole o código SRMAP1:…"></label><button type="button" class="btn g" id="aiImportBtn">IMPORTAR MAPA</button><p class="ai-map-hint">Você guarda até ${AIMAP_MAX} mapas neste aparelho. Mapas importados passam pela mesma validação.</p></section>
   <div id="aiMapStatus" class="msg" role="status">Entre em uma conta conectada para usar o estúdio. A chave da Groq deve ficar apenas no servidor.</div>
   <button class="btn g" id="aiMapBack">VOLTAR AO MENU</button>`;
   const panels=[...card.querySelectorAll('[data-panel]')],tabs=[...card.querySelectorAll('[data-tab]')];
-  function setTab(t){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));panels.forEach(p=>p.hidden=p.dataset.panel!==t)}
+  function setTab(t){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));panels.forEach(p=>p.hidden=p.dataset.panel!==t);if(t==='editor')edSync()}
   tabs.forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
   $('#aiMapBack').onclick=()=>screen(backTo);
   const status=$('#aiMapStatus'),promptEl=$('#aiMapPrompt'),chatLog=$('#aiChatLog');
   function renderChat(){chatLog.innerHTML=chat.length?chat.map(m=>`<div class="ai-chat-message ${m.role==='assistant'?'assistant':'user'}"><b>${m.role==='assistant'?'IA Subway Run':'Você'}</b><p>${esc(m.content)}</p></div>`).join(''):'<div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva a primeira versão e depois peça ajustes pelo chat.</p></div>';chatLog.scrollTop=chatLog.scrollHeight}
   function renderFiles(){const box=$('#aiFileList');box.innerHTML=attachments.length?attachments.map((a,i)=>`<div class="ai-file-row"><span>${a.kind==='image'?'🖼️':'📄'} ${esc(a.name)} <small>${Math.round(a.size/1024)} KB</small></span><button type="button" class="btn g" data-remove-file="${i}">Remover</button>${a.kind==='image'&&a.url?`<img src="${a.url}" alt="Prévia de ${esc(a.name)}">`:''}</div>`).join(''):'<p>Nenhum arquivo anexado.</p>';box.querySelectorAll('[data-remove-file]').forEach(b=>b.onclick=()=>{const a=attachments.splice(Number(b.dataset.removeFile),1)[0];if(a&&a.url)URL.revokeObjectURL(a.url);renderFiles()})}
   $('#aiMapFiles').onchange=async e=>{for(const f of [...(e.target.files||[])].slice(0,8)){if(f.size>2*1024*1024){status.textContent=`${f.name} ultrapassa 2 MB e foi ignorado.`;continue}const imageFile=f.type.startsWith('image/');let content='';if(!imageFile){try{content=(await f.text()).slice(0,12000)}catch(_){content='[Não foi possível ler o arquivo como texto]'}}attachments.push({name:f.name,size:f.size,type:f.type,kind:imageFile?'image':'text',content,url:imageFile?URL.createObjectURL(f):''})}renderFiles();e.target.value=''};
+  // ===== Editor de mapas (estilo "studio"): tema + layout linha por linha =====
+  let draft=null,tool='barrier',themeOpen=false;
+  const CELL_L={'':'·',barrier:'🟧',bar:'🟦',wall:'🧱',train1:'🚆',train2:'🚆🚆',train3:'🚆🚆🚆',coin:'🪙',veh:'🚋'};
+  const TOOLS=[['','⬜ Apagar'],['barrier','🟧 Barreira (pular)'],['bar','🟦 Barra (deslizar)'],['wall','🧱 Muro'],['train1','🚆 Trem curto'],['train2','🚆 Trem médio'],['train3','🚆 Trem longo'],['coin','🪙 Moedas'],['veh','🚋 Veículo']];
+  const NEWROWS=()=>[['','',''],['','barrier',''],['bar','',''],['','','barrier'],['','train1','']];
+  function edSync(){if(!draft)draft=currentMap?srmapSanitize(currentMap):srmapSanitize({name:'Meu mapa',layout:NEWROWS()});currentMap=draft;edRender()}
+  function edCommit(){draft=srmapSanitize(draft);currentMap=draft;edRender()}
+  function edRandom(){const rows=[],n=36;for(let i=0;i<n;i++){const d=Math.min(.75,.25+i/n*.5),c=['','',''];for(let l=0;l<3;l++){if(Math.random()<d){const r=Math.random();c[l]=r<.3?'barrier':r<.5?'bar':r<.65?'wall':r<.82?['train1','train2','train3'][Math.floor(Math.random()*3)]:'coin'}}rows.push({c,g:1})}draft.layout=rows;edCommit()}
+  function edRender(){
+    const box=$('#edBox');if(!box||!draft)return;const d=draft,L=d.layout,y=card.scrollTop;{const cur=box.querySelector('.ed-theme');if(cur)themeOpen=cur.open}
+    const col=(k,n,v)=>`<label class="ed-col">${n}<input type="color" data-col="${k}" value="${v}"></label>`;
+    const sel=(id,list,val,none)=>`<select id="${id}">${none?`<option value="">${none}</option>`:''}${list.map(x=>`<option value="${x}" ${x===val?'selected':''}>${x}</option>`).join('')}</select>`;
+    const flags=[['rain','Chuva'],['snow','Neve'],['stars','Estrelas'],['nocl','Sem nuvens'],['cyber','Cyber'],['vox','Cubos'],['earth','Planeta']];
+    box.innerHTML=`<h3>🛠️ Editor de mapas</h3><label>Nome do mapa<input id="edName" maxlength="28" value="${esc(d.name)}"></label>
+    <details class="ed-theme" ${themeOpen?'open':''}><summary>🎨 Tema (cores, cenário, veículo e clima)</summary><div class="ed-cols">${col('sky0','Céu topo',d.sky[0])}${col('sky1','Céu meio',d.sky[1])}${col('sky2','Horizonte',d.sky[2])}${col('orb','Sol/Lua',d.orb)}${col('gnd','Chão',d.gnd)}${col('bed','Pista',d.bed)}${col('rail','Trilho',d.rail)}</div>
+    <div class="ed-cols"><label>Cenário${sel('edDeco',SRMAP_DECO,d.deco)}</label><label>Cenário 2${sel('edDeco2',SRMAP_DECO,d.deco2||'','nenhum')}</label><label>Veículo${sel('edVeh',SRMAP_VEH,d.veh||'','nenhum')}</label></div>
+    <div class="ed-flags">${flags.map(f=>`<label><input type="checkbox" data-flag="${f[0]}" ${d[f[0]]?'checked':''}> ${f[1]}</label>`).join('')}</div></details>
+    <p class="ai-map-hint">Escolha uma ferramenta e toque nas células. Cada linha tem 3 pistas (esquerda, meio, direita). Tocar de novo na mesma célula apaga. Toda linha precisa ter uma passagem: se faltar, o editor abre uma sozinho.</p>
+    <div class="ed-tools">${TOOLS.map(t=>`<button type="button" class="btn ${t[0]===tool?'':'g'} s" data-tool="${t[0]}">${t[1]}</button>`).join('')}</div>
+    <p class="ai-map-hint"><b>${L.length}</b> / ${SRMAP_MAXROWS} linhas · início no topo · o mapa repete quando chega no fim</p>
+    <div class="ed-grid">${L.map((r,i)=>`<div class="ed-row"><span class="ed-n">${i+1}</span>${r.c.map((k,c)=>`<button type="button" class="ed-cell k-${k||'none'}" data-cell="${i},${c}">${CELL_L[k]}</button>`).join('')}<select data-gap="${i}" aria-label="Espaço até a próxima linha"><option value="0" ${r.g===0?'selected':''}>curto</option><option value="1" ${r.g===1?'selected':''}>normal</option><option value="2" ${r.g===2?'selected':''}>longo</option></select><span class="ed-ops"><button type="button" class="btn s g" data-up="${i}" aria-label="Subir">↑</button><button type="button" class="btn s g" data-dn="${i}" aria-label="Descer">↓</button><button type="button" class="btn s g" data-ins="${i}" aria-label="Inserir linha abaixo">＋</button><button type="button" class="btn s g" data-delrow="${i}" aria-label="Apagar linha">✕</button></span></div>`).join('')}</div>
+    <button type="button" class="btn g" id="edAdd">＋ ADICIONAR LINHA NO FIM</button>
+    ${(d.notes||[]).length?`<ul class="ai-map-test-note">${d.notes.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}
+    <div class="ai-map-actions"><button type="button" class="btn" id="edPlay">▶ TESTAR NO JOGO</button><button type="button" class="btn g" id="edSave">💾 Salvar</button><button type="button" class="btn g" id="edRand">🎲 Layout aleatório justo</button><button type="button" class="btn g" id="edAI">🤖 Pedir ajuste à IA</button><button type="button" class="btn g" id="edNew">🧹 Novo mapa</button></div>`;
+    card.scrollTop=y;
+  }
+  (function edEvents(){const box=$('#edBox');box.addEventListener('toggle',e=>{if(e.target.classList&&e.target.classList.contains('ed-theme'))themeOpen=e.target.open},true);
+    box.onclick=e=>{const b=e.target.closest('button');if(!b||!draft)return;const L=draft.layout,D=b.dataset;
+      if(D.tool!==undefined){tool=D.tool;edRender();return}
+      if(D.cell){const [r,c]=D.cell.split(',').map(Number);L[r].c[c]=L[r].c[c]===tool?'':tool;edCommit();return}
+      if(D.up!==undefined){const i=+D.up;if(i>0){[L[i-1],L[i]]=[L[i],L[i-1]];edCommit()}return}
+      if(D.dn!==undefined){const i=+D.dn;if(i<L.length-1){[L[i+1],L[i]]=[L[i],L[i+1]];edCommit()}return}
+      if(D.ins!==undefined){if(L.length<SRMAP_MAXROWS){L.splice(+D.ins+1,0,{c:['','',''],g:1});edCommit()}return}
+      if(D.delrow!==undefined){if(L.length>1){L.splice(+D.delrow,1);edCommit()}return}
+      if(b.id==='edAdd'){if(L.length<SRMAP_MAXROWS){L.push({c:['','',''],g:1});edCommit()}else status.textContent='Limite de '+SRMAP_MAXROWS+' linhas.';return}
+      if(b.id==='edPlay'){playMap(aiMapAdd(draft));return}
+      if(b.id==='edSave'){const i=aiMapAdd(draft);renderMine();status.textContent='Salvo: '+MAPS[i].n+'. Está em Meus mapas e no seletor do menu.';return}
+      if(b.id==='edRand'){edRandom();return}
+      if(b.id==='edAI'){setTab('chat');promptEl.focus();status.textContent='Peça mudanças no mapa que está no editor (ex.: "mais trens no final").';return}
+      if(b.id==='edNew'){if(confirm('Começar um mapa novo? O que não foi salvo será perdido.')){draft=srmapSanitize({name:'Meu mapa',layout:NEWROWS()});currentMap=draft;edCommit()}}
+    };
+    box.onchange=e=>{const t=e.target,id=t.id;if(!draft)return;
+      if(id==='edName')draft.name=t.value;else if(id==='edDeco')draft.deco=t.value;else if(id==='edDeco2')draft.deco2=t.value;else if(id==='edVeh')draft.veh=t.value;
+      else if(t.dataset.col){const k=t.dataset.col;if(k.startsWith('sky'))draft.sky[+k[3]]=t.value;else draft[k]=t.value}
+      else if(t.dataset.flag)draft[t.dataset.flag]=t.checked;else if(t.dataset.gap!==undefined)draft.layout[+t.dataset.gap].g=+t.value;else return;
+      edCommit()};
+  })();
   function swatch(cv,m){const g=cv.getContext('2d'),W=cv.width,H=cv.height,hz=H*.52,sk=g.createLinearGradient(0,0,0,hz);sk.addColorStop(0,m.sky[0]);sk.addColorStop(.7,m.sky[1]);sk.addColorStop(1,m.sky[2]);g.fillStyle=sk;g.fillRect(0,0,W,hz);if(m.stars){g.fillStyle='#fff';for(let i=0;i<40;i++)g.fillRect((i*97)%W,(i*53)%(hz*.9),2,2)}g.fillStyle=m.orb;if(m.earth){g.beginPath();g.arc(W*.74,hz*.5,H*.09,0,7);g.fill()}else g.fillRect(W*.74-H*.06,hz*.5-H*.06,H*.12,H*.12);g.fillStyle=m.hill;g.beginPath();g.moveTo(0,hz);g.bezierCurveTo(W*.2,hz-H*.12,W*.4,hz-H*.02,W*.6,hz-H*.1);g.bezierCurveTo(W*.8,hz-H*.16,W*.9,hz-H*.04,W,hz-H*.08);g.lineTo(W,hz);g.fill();(m.bld.length?m.bld:[]).forEach((c,i)=>{g.fillStyle=c;const bw=W*.07,bh=H*(.1+((i*37)%5)*.03);for(const x of [W*(.06+i*.075),W*(.64+i*.08)])g.fillRect(x,hz-bh,bw,bh)});g.fillStyle=m.gnd;g.fillRect(0,hz,W,H-hz);g.fillStyle=m.bed;g.beginPath();g.moveTo(W*.4,hz);g.lineTo(W*.6,hz);g.lineTo(W*.9,H);g.lineTo(W*.1,H);g.fill();g.strokeStyle=m.rail;g.lineWidth=3;for(const k of [.34,.66]){g.beginPath();g.moveTo(W*(.4+.2*k),hz);g.lineTo(W*(.1+.8*k),H);g.stroke()}if(m.rain){g.strokeStyle='rgba(218,238,255,.45)';for(let i=0;i<30;i++){const x=(i*61)%W,y=(i*43)%(H*.9);g.beginPath();g.moveTo(x,y);g.lineTo(x-4,y+12);g.stroke()}}if(m.snow){g.fillStyle='#fff';for(let i=0;i<40;i++){g.beginPath();g.arc((i*73)%W,(i*47)%H,2,0,7);g.fill()}}}
   function playMap(i){CFG.map=i;save();startGame()}
   function copyCode(m){const code=aiMapCode(m);if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(code).then(()=>{status.textContent='Código copiado! Seu amigo cola em Meus mapas > Importar.'}).catch(()=>prompt('Copie o código:',code));else prompt('Copie o código:',code)}
   function renderMine(){const box=$('#aiMineList'),list=MAPS.map((m,i)=>[m,i]).filter(x=>x[1]>=AIMAP_BASE);box.innerHTML=list.length?list.map(([m,i])=>`<div class="ai-file-row"><span style="display:flex;align-items:center;gap:8px"><i style="width:34px;height:22px;border-radius:6px;background:linear-gradient(${m.sky[0]},${m.sky[2]} 60%,${m.gnd} 60%)"></i>${esc(m.n)}</span><span><button type="button" class="btn s" data-mplay="${i}">JOGAR</button> <button type="button" class="btn g" data-mcode="${i}">Código</button> <button type="button" class="btn g" data-mdel="${i}">Excluir</button></span></div>`).join(''):'<p>Você ainda não salvou nenhum mapa.</p>';box.querySelectorAll('[data-mplay]').forEach(b=>b.onclick=()=>playMap(Number(b.dataset.mplay)));box.querySelectorAll('[data-mcode]').forEach(b=>b.onclick=()=>copyCode(MAPS[Number(b.dataset.mcode)]));box.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=()=>{if(confirm('Excluir este mapa do aparelho?')){aiMapRemove(Number(b.dataset.mdel));renderMine()}})}
   $('#aiImportBtn').onclick=()=>{try{const i=aiMapAdd(aiMapFromCode($('#aiImportCode').value));$('#aiImportCode').value='';renderMine();status.textContent='Mapa importado: '+MAPS[i].n}catch(_){status.textContent='Código inválido. Peça para o amigo copiar de novo.'}};
   renderMine();
-  function renderMap(map,ignored){map=srmapSanitize(map);currentMap=map;const result=$('#aiMapResult'),extra=[].concat(map.notes||[],(ignored||[]).map(t=>'Ignorado (não permitido): '+t));
-    result.innerHTML=`<h2>✅ ${esc(map.n)}</h2><p>${esc(map.desc||'Mapa pronto para jogar.')}</p><div class="ai-map-preview-wrap"><canvas id="aiMapPreview" width="900" height="420" aria-label="Prévia visual do mapa"></canvas></div><p class="ai-map-test-note">Cenário: ${esc(map.deco)}${map.deco2?' + '+esc(map.deco2):''}${map.veh?' · Veículo: '+esc(map.veh):''}. Joga no motor real, com as mesmas moedas, obstáculos, pulo e gravidade de todos os mapas. Não entra nos rankings oficiais.</p>${extra.length?`<ul class="ai-map-test-note">${extra.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}<div class="ai-map-actions"><button type="button" class="btn" id="aiMapPlay">▶ JOGAR AGORA</button><button type="button" class="btn g" id="aiMapSave">💾 Salvar em Meus mapas</button><button type="button" class="btn g" id="aiMapCopy">📋 Copiar código</button><button type="button" class="btn g" id="aiMapDetailsBtn">Ver estrutura gerada</button><button type="button" class="btn g" id="aiMapSubmit">Enviar para revisão</button></div><details class="ai-map-details" id="aiMapDetails" hidden><summary>Estrutura JSON</summary><pre class="ai-map-json"></pre></details>`;
+  function renderMap(map,ignored){map=srmapSanitize(map);currentMap=map;draft=map;const result=$('#aiMapResult'),extra=[].concat(map.notes||[],(ignored||[]).map(t=>'Ignorado (não permitido): '+t));
+    result.innerHTML=`<h2>✅ ${esc(map.n)}</h2><p>${esc(map.desc||'Mapa pronto para jogar.')}</p><div class="ai-map-preview-wrap"><canvas id="aiMapPreview" width="900" height="420" aria-label="Prévia visual do mapa"></canvas></div><p class="ai-map-test-note">Cenário: ${esc(map.deco)}${map.deco2?' + '+esc(map.deco2):''}${map.veh?' · Veículo: '+esc(map.veh):''}. Layout de ${map.layout.length} linhas, jogado no motor real com a mesma física de todos os mapas. Não dá moedas da carteira e não entra nos rankings oficiais.</p>${extra.length?`<ul class="ai-map-test-note">${extra.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}<div class="ai-map-actions"><button type="button" class="btn" id="aiMapPlay">▶ JOGAR AGORA</button><button type="button" class="btn g" id="aiMapSave">💾 Salvar em Meus mapas</button><button type="button" class="btn g" id="aiMapCopy">📋 Copiar código</button><button type="button" class="btn g" id="aiMapDetailsBtn">Ver estrutura gerada</button><button type="button" class="btn g" id="aiMapSubmit">Enviar para revisão</button></div><details class="ai-map-details" id="aiMapDetails" hidden><summary>Estrutura JSON</summary><pre class="ai-map-json"></pre></details>`;
     result.querySelector('pre').textContent=JSON.stringify(map,null,2);swatch(result.querySelector('#aiMapPreview'),map);
     result.querySelector('#aiMapPlay').onclick=()=>{playMap(aiMapAdd(map))};
     result.querySelector('#aiMapSave').onclick=()=>{const i=aiMapAdd(map);renderMine();status.textContent='Salvo: '+MAPS[i].n+'. Escolha em Meus mapas ou no seletor do menu.'};
@@ -957,11 +1005,14 @@ MAPS.push(
   { n:'Cidade Neon', sky:['#070921','#18134c','#56266d'], orb:'#ff4fc8', gnd:'#17172f', bed:'#292747', rail:'#4ff0ff', bld:['#ff3dcb','#4ff0ff','#7a5cff','#ffd21f'], deco:'city', deco2:'city', stars:true, nocl:true, cyber:true }
 );
 MAPS[0].deco2 = 'house'; MAPS[4].deco2 = 'palm'; MAPS[1].veh = 'bus'; MAPS[2].veh = 'ghost'; MAPS[3].veh = 'sled'; MAPS[6].veh = 'buggy'; MAPS[7].veh = 'logtruck'; MAPS[8].veh = 'minecart'; MAPS[9].veh = 'bullet'; MAPS[11].veh = 'metro'; MAPS[4].veh = 'bonde'; MAPS[5].veh = 'wagon'; MAPS[10].veh = 'ufo'; MAPS[12].veh = 'ufo'; MAPS[1].deco2 = 'house'; MAPS[2].deco2 = 'pine'; MAPS[6].deco2 = 'palm'; MAPS[7].deco2 = 'voxtree';
-/* ===== SRMAP: validação de mapas criados por IA =====
-   Um mapa de IA é SÓ um tema visual (igual aos seus MAPS): cores, cenário, veículo e clima.
-   Obstáculos, moedas, velocidade, pulo e gravidade continuam sendo do motor do jogo, iguais em todos os mapas.
-   Qualquer campo que não esteja na lista abaixo é descartado, então a IA (ou um JSON colado) não consegue
-   criar voo, gravidade, velocidade, moedas extras/removidas, atalhos nem código. */
+/* ===== SRMAP: validação de mapas criados por jogadores/IA =====
+   Um mapa = tema visual (cores, cenário, veículo, clima) + layout (linhas de obstáculos nas 3 pistas).
+   O motor do jogo continua sendo o mesmo para todos: velocidade, pulo, gravidade e física não são editáveis.
+   Qualquer campo fora da lista é descartado, então nem a IA nem um código colado criam voo, gravidade,
+   velocidade, atalhos ou código. O layout passa por um verificador de justiça: toda linha tem passagem alcançável. */
+const SRMAP_CELLS = ['', 'barrier', 'bar', 'wall', 'train1', 'train2', 'train3', 'coin', 'veh'];
+const SRMAP_MAXROWS = 120;
+const SRMAP_SOLID = c => !!c && c !== 'coin';
 const SRMAP_DECO = ['city', 'cactus', 'palm', 'pine', 'rock', 'crater', 'voxtree', 'house'];
 const SRMAP_VEH = ['bus', 'ghost', 'sled', 'buggy', 'logtruck', 'minecart', 'bullet', 'metro', 'bonde', 'wagon', 'ufo'];
 const SRMAP_FLAGS = ['rain', 'snow', 'stars', 'nocl', 'cyber', 'vox', 'earth'];
@@ -976,6 +1027,35 @@ function srmapMix(a, b, t) { const A = srmapRGB(a), B = srmapRGB(b); return srma
 function srmapLum(h) { return srmapRGB(h).map(x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }).reduce((s, x, i) => s + x * [.2126, .7152, .0722][i], 0); }
 function srmapContrast(a, b) { const x = srmapLum(a), y = srmapLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
 function srmapText(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f<>`\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
+
+// Layout: lista de linhas {c:[esq,meio,dir], g:0|1|2 (espaço até a próxima: curto/normal/longo)}.
+// Aceita também linhas no formato ["barrier","","coin"]. Corrige sozinho o que for impossível de passar.
+function srmapLayout(raw, notes) {
+  const rows = (Array.isArray(raw) ? raw : []).slice(0, SRMAP_MAXROWS).map(r => {
+    const c0 = Array.isArray(r) ? r : (r && Array.isArray(r.c) ? r.c : []);
+    const c = [0, 1, 2].map(i => SRMAP_CELLS.includes(c0[i]) ? c0[i] : '');
+    const g = Array.isArray(r) ? 1 : Math.max(0, Math.min(2, Math.floor(Number(r && r.g)) || 0));
+    return { c, g: Array.isArray(r) ? 1 : g };
+  });
+  let reach = [true, true, true], fixed = 0;
+  rows.forEach((row, i) => {
+    // veículo que cruza: a pista dele fica livre de obstáculos sólidos nas 2 linhas seguintes
+    for (let l = 0; l < 3; l++) if (row.c[l] === 'veh') for (let k = 1; k <= 2; k++) { const nx = rows[i + k]; if (nx && SRMAP_SOLID(nx.c[l]) && nx.c[l] !== 'veh') { nx.c[l] = ''; fixed++; } }
+    const pass = l => !SRMAP_SOLID(row.c[l]);
+    const can = l => pass(l) && reach.some((ok, p) => ok && Math.abs(p - l) <= 1);
+    if (![0, 1, 2].some(can)) { // nenhuma passagem alcançável: abre a pista livre mais próxima
+      const from = reach.map((ok, p) => ok ? p : -9).filter(p => p >= 0);
+      let best = 1, bd = 9;
+      for (let l = 0; l < 3; l++) { const d = Math.min(...from.map(p => Math.abs(p - l))); if (d <= 1 && d < bd) { bd = d; best = l; } }
+      row.c[best] = ''; fixed++;
+    }
+    reach = [0, 1, 2].map(can);
+  });
+  const empty = rows.length && rows.every(r => r.c.every(c => !c));
+  if (fixed && notes) notes.push('Abri ' + fixed + ' passagem(ns) no layout para o mapa ser sempre possível de passar.');
+  if (empty && notes) notes.push('O layout está vazio: adicione obstáculos.');
+  return rows;
+}
 function srmapSanitize(raw) {
   const notes = [], r = raw && typeof raw === 'object' ? raw : {};
   const name = srmapText(r.name, 28) || 'Mapa da IA';
@@ -992,11 +1072,14 @@ function srmapSanitize(raw) {
   const deco = SRMAP_DECO.includes(r.deco) ? r.deco : 'city';
   const deco2 = SRMAP_DECO.includes(r.deco2) ? r.deco2 : '';
   const veh = SRMAP_VEH.includes(r.veh) ? r.veh : '';
-  const map = { name, n: '🤖 ' + name, ai: true, desc: srmapText(r.description || r.desc, 160), sky, orb, gnd, bed, rail, bld, deco, hill: srmapMix(gnd, sky[2], .35), win: srmapHex(r.win, '#fff1ad') };
+  const layout = srmapLayout(r.layout, notes);
+  const map = { name, n: '🤖 ' + name, ai: true, desc: srmapText(r.description || r.desc, 160), sky, orb, gnd, bed, rail, bld, deco, hill: srmapMix(gnd, sky[2], .35), win: srmapHex(r.win, '#fff1ad'), layout };
   if (deco2) map.deco2 = deco2;
   if (veh) map.veh = veh;
   SRMAP_FLAGS.forEach(f => { if (r[f] === true) map[f] = true; });
-  if (map.deco === 'city' && !map.bld.length) map.bld = [srmapMix(gnd, '#ffffff', .25), srmapMix(sky[0], '#808080', .5), srmapMix(rail, '#202040', .5)];
+  // O motor lê sempre 4 cores de prédio: completa para 4 (cenário de cidade sem cores recebe uma paleta do tema)
+  if (!map.bld.length && (map.deco === 'city' || map.deco2 === 'city')) map.bld = [srmapMix(gnd, '#ffffff', .25), srmapMix(sky[0], '#808080', .5), srmapMix(rail, '#202040', .5), srmapMix(sky[1], '#303030', .4)];
+  while (map.bld.length && map.bld.length < 4) map.bld.push(map.bld[map.bld.length % Math.max(1, map.bld.length)]);
   map.notes = notes;
   return map;
 }
@@ -1005,14 +1088,14 @@ function srmapSanitize(raw) {
 const AIMAP_KEY = 'sr_ai_maps_v1', AIMAP_MAX = 10, AIMAP_BASE = MAPS.length;
 function aiMapsStore() { try { localStorage.setItem(AIMAP_KEY, JSON.stringify(MAPS.slice(AIMAP_BASE).map(({ notes, ...m }) => m))); } catch (_) {} }
 function aiMapAdd(raw) {
-  const m = srmapSanitize(raw), same = MAPS.findIndex((x, i) => i >= AIMAP_BASE && x.name === m.name && JSON.stringify(x.sky) === JSON.stringify(m.sky));
-  if (same >= 0) return same;
+  const m = srmapSanitize(raw), same = MAPS.findIndex((x, i) => i >= AIMAP_BASE && x.name === m.name);
+  if (same >= 0) { MAPS[same] = m; aiMapsStore(); return same; } // mesmo nome = atualiza o mapa salvo
   if (MAPS.length - AIMAP_BASE >= AIMAP_MAX) { MAPS.splice(AIMAP_BASE, 1); if (CFG.map > AIMAP_BASE) CFG.map--; else if (CFG.map === AIMAP_BASE) CFG.map = 0; }
   MAPS.push(m); aiMapsStore(); return MAPS.length - 1;
 }
 function aiMapRemove(i) { if (i < AIMAP_BASE || i >= MAPS.length) return; MAPS.splice(i, 1); if (CFG.map === i) CFG.map = 0; else if (CFG.map > i) CFG.map--; aiMapsStore(); save(); }
 function aiMapCode(m) { const { notes, hill, ai, n, ...spec } = m; return 'SRMAP1:' + btoa(unescape(encodeURIComponent(JSON.stringify(spec)))); }
-function aiMapFromCode(t) { t = String(t || '').trim(); if (!t.startsWith('SRMAP1:') || t.length > 6000) throw new Error('Código inválido.'); return JSON.parse(decodeURIComponent(escape(atob(t.slice(7))))); }
+function aiMapFromCode(t) { t = String(t || '').trim(); if (!t.startsWith('SRMAP1:') || t.length > 24000) throw new Error('Código inválido.'); return JSON.parse(decodeURIComponent(escape(atob(t.slice(7))))); }
 try { const a = JSON.parse(localStorage.getItem(AIMAP_KEY) || '[]'); if (Array.isArray(a)) a.slice(0, AIMAP_MAX).forEach(x => MAPS.push(srmapSanitize(x))); } catch (_) {}
 if (!(CFG.map >= 0 && CFG.map < MAPS.length)) CFG.map = 0;
 // Na Lua a gravidade é menor: pulos mais longos e flutuantes
@@ -1023,7 +1106,8 @@ let dist, coins, objs, nextWz, pl, guard, board = { t: 0, cd: 0 }, trail = [], s
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 let ncCur = 0, ncBest = 0; // tempo (ms) sem pegar moeda: atual e melhor sequência da corrida
-function reset() { ncCur = ncBest = 0; dist = 0; coins = 0; objs = []; nextWz = 1500; speed = LC.speed0; tAccum = 0; tFrozen = false; msgT = 0; pl = { lane: 0, px: 0, jy: 0, vy: 0, roll: 0, prev: 0, inv: 0, stun: 0, floor: 0, buf: 0, coy: 0 }; guard = { t: 0, age: 0 }; board = { t: 0, cd: 0 }; trail = []; slideDust = []; mtArm = null; mtNextAt = 6500; }
+let layI = 0, layPend = [];
+function reset() { layI = 0; layPend = []; ncCur = ncBest = 0; dist = 0; coins = 0; objs = []; nextWz = 1500; speed = LC.speed0; tAccum = 0; tFrozen = false; msgT = 0; pl = { lane: 0, px: 0, jy: 0, vy: 0, roll: 0, prev: 0, inv: 0, stun: 0, floor: 0, buf: 0, coy: 0 }; guard = { t: 0, age: 0 }; board = { t: 0, cd: 0 }; trail = []; slideDust = []; mtArm = null; mtNextAt = 6500; }
 function isFS() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
 function goFS() { const e = document.documentElement, f = e.requestFullscreen || e.webkitRequestFullscreen; if (f && !isFS()) try { const r = f.call(e); if (r && r.catch) r.catch(() => {}); } catch (x) {} }
 function outFS() { const f = document.exitFullscreen || document.webkitExitFullscreen; if (f && isFS()) try { f.call(document); } catch (x) {} }
@@ -1058,7 +1142,7 @@ function resume() { if (LC.maint) { alert(LC.maintMsg || 'Jogo em manutenção. 
 function crash(title) {
   if (st !== 'play') return;
   if (!(MATCH.active && !MATCH.eliminated) && board.t > 0 && title !== 'TEMPO ESGOTADO') { board.t = 0; pl.inv = 2.6; msgTxt = '🛹 A PRANCHA QUEBROU!'; msgT = 2; return; } // a prancha absorve uma batida
-  stopMusic(); sfx(110, .5, 'sawtooth', .12, 40); st = 'dying'; dieT = 0; dieTitle = title; pl.roll = 0; slideDust = []; $('#pauseBtn').style.visibility = 'hidden'; if (/PEGO/.test(title)) { guard.t = Math.max(guard.t, 3); guard.age = 0; } pl.vy = 0; const sc = score(), noCoinSeconds = Math.floor(Math.max(ncBest, ncCur) / 1000); if (sc > CFG.best) CFG.best = sc; if (!CFG.inf) CFG.wallet += Math.round(coins * LC.coinMul); MATCH.frames.push({t:Math.round(performance.now()-MATCH.startedAt),d:Math.round(dist),l:Math.round(pl.lane),y:Math.round(pl.jy),c:CFG.char,o:objs.filter(o=>o.wz-dist<1700&&o.wz-dist>-100).slice(0,5).map(o=>({t:o.t,l:o.l,z:Math.round(o.wz-dist)}))}); if (MATCH.active && !MATCH.eliminated) { MATCH.eliminated=true; roomSend({type:'eliminate',reason:title,distance:Math.floor(dist)}); }
+  stopMusic(); sfx(110, .5, 'sawtooth', .12, 40); st = 'dying'; dieT = 0; dieTitle = title; pl.roll = 0; slideDust = []; $('#pauseBtn').style.visibility = 'hidden'; if (/PEGO/.test(title)) { guard.t = Math.max(guard.t, 3); guard.age = 0; } pl.vy = 0; const sc = score(), noCoinSeconds = Math.floor(Math.max(ncBest, ncCur) / 1000); const aiRun = !!(MAPS[CFG.map] && MAPS[CFG.map].ai); if (!aiRun && sc > CFG.best) CFG.best = sc; if (!CFG.inf && !aiRun) CFG.wallet += Math.round(coins * LC.coinMul); MATCH.frames.push({t:Math.round(performance.now()-MATCH.startedAt),d:Math.round(dist),l:Math.round(pl.lane),y:Math.round(pl.jy),c:CFG.char,o:objs.filter(o=>o.wz-dist<1700&&o.wz-dist>-100).slice(0,5).map(o=>({t:o.t,l:o.l,z:Math.round(o.wz-dist)}))}); if (MATCH.active && !MATCH.eliminated) { MATCH.eliminated=true; roomSend({type:'eliminate',reason:title,distance:Math.floor(dist)}); }
   void saveCloudRun({ score:sc, noCoinSeconds, distance:Math.floor(dist), coins, replay:MATCH.frames.slice(-360) }); addRank(sc); save(); over = { title, score: sc }; /* a tela de fim aparece depois da animação de queda */ }
 const score = () => Math.floor(dist / 50) + coins * 10;
 // Tropeço: 1ª batida chama o guarda; 2ª batida enquanto ele está na sua cola = pego
@@ -1250,7 +1334,32 @@ function hud() {
 // Maria Fumaça: em certos mapas, um trem vem de frente numa das pistas. Só sai quando a pista está livre.
 let mtArm = null, mtNextAt = 6500;
 const steamOn = () => { const M = MAPS[CFG.map]; if (M.veh) return true; return M.steam !== undefined ? !!M.steam : !(M.moon || M.cyber); }; // M.steam:true/false força por mapa
+const LAY_GAP = [420, 600, 800], LAY_LEN = { barrier: 120, bar: 40, wall: 90, train1: 500, train2: 850, train3: 1200 };
+const VEH_LEN = { wagon: 440, ufo: 360, bonde: 620, bus: 520, ghost: 780, sled: 520, buggy: 300, logtruck: 700, minecart: 720, bullet: 900, metro: 780 };
+// Mapas criados por jogadores: as linhas do layout viram os MESMOS objetos do motor (barrier, bar, wall, train, coin, steam).
+function spawnLayout(M) {
+  const rows = M.layout;
+  while (nextWz < dist + ZMAX) {
+    const row = rows[layI % rows.length]; layI++; let maxLen = 0;
+    for (let i = 0; i < 3; i++) {
+      const k = row.c[i], l = i - 1; if (!k) continue;
+      if (k === 'coin') { for (let q = 0; q < 5; q++) objs.push({ t: 'coin', l, wz: nextWz + q * 170, len: 0 }); continue; }
+      if (k === 'veh') { layPend.push({ l, wz: nextWz }); continue; } // o veículo entra depois, para chegar junto com a linha
+      const t = k.startsWith('train') ? 'train' : k, len = LAY_LEN[k]; if (!len) continue;
+      objs.push({ t, l, wz: nextWz, len, col: COLORS[(layI + i) % 4] }); maxLen = Math.max(maxLen, len);
+    }
+    nextWz += Math.max(maxLen, 720) + LAY_GAP[row.g | 0 || 0];
+  }
+  // O veículo vem de frente: nasce mais longe para encontrar o jogador na mesma hora em que a linha dele chega
+  const vh = M.veh || 'steam', k = (speed + 560) / Math.max(speed, 1);
+  layPend = layPend.filter(p => {
+    const dr = p.wz - dist; if (dr <= 0) return false;
+    if (dr * k > ZMAX * .92) return true;
+    objs.push({ t: 'steam', veh: vh, l: p.l, wz: dist + dr * k, len: VEH_LEN[vh] || 820, v: 560 }); vehHorn(M.veh); return false;
+  });
+}
 function spawn() {
+  { const LM = MAPS[CFG.map]; if (LM && LM.ai && LM.layout && LM.layout.length) { spawnLayout(LM); return; } }
   while (nextWz < dist + ZMAX) {
     if (!mtArm && steamOn() && dist > mtNextAt) mtArm = { l: [-1, 0, 1][Math.floor(Math.random() * 3)] };
     let free = [-1, 0, 1][Math.floor(Math.random() * 3)]; const gap = Math.max(420, 800 - dist / 80); let maxLen = 0;
