@@ -11,33 +11,40 @@
 </head>
 <body>
 
-<div id="boot" role="status" aria-live="polite"><div class="by">Criador</div>
-<div class="av"><div><img id="bootImg" alt="Foto de perfil do criador" referrerpolicy="no-referrer" src="https://images.steamusercontent.com/ugc/2056504355405024375/726906C7574BE6724D03336E7414446C9B58985A/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true"><b id="bootLetter" style="display:none">S</b></div></div>
-<h1>STEVE</h1><div class="at">@h4xinteractive</div>
-<section class="designer-credit" aria-label="Design do jogo">
- <div class="designer-label">DESIGN</div>
- <img class="designer-photo" src="https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/ef7bfb18128bb2b969e297ab6d013b5f~tplv-tiktokx-cropcenter:100:100.jpeg?dr=14579&refresh_token=a85d6a5f&x-expires=1793311200&x-signature=VrhEPuqiZyUDaG57P7%2B8ceTKBNM%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=my2" alt="Foto de Ivad" referrerpolicy="no-referrer" loading="eager">
- <div class="designer-info"><strong>Ivad</strong><span>@ivad.lives</span></div>
-</section>
-<div class="bar"><i id="bootBar"></i></div><div class="pc" id="bootPc">0%</div></div>
+<div id="boot" role="status" aria-live="polite">
+<video id="bootVideo" class="bootVideo" src="https://widespread-crimson-etsnfqmp.edgeone.dev/" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
+<div class="bootShade"></div>
+<div class="bootUI">
+ <div class="credits">
+  <div class="cr"><div class="av"><div><img id="bootImg" alt="Foto de perfil do criador" referrerpolicy="no-referrer" src="https://images.steamusercontent.com/ugc/2056504355405024375/726906C7574BE6724D03336E7414446C9B58985A/?imw=637&imh=358&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=true"><b id="bootLetter" style="display:none">S</b></div></div><div class="ct"><div class="by">Criador</div><h1>STEVE</h1><div class="at">@h4xinteractive</div></div></div>
+  <section class="designer-credit" aria-label="Design do jogo">
+   <div class="designer-label">DESIGN</div>
+   <img class="designer-photo" src="https://p16-common-sign.tiktokcdn.com/tos-alisg-avt-0068/ef7bfb18128bb2b969e297ab6d013b5f~tplv-tiktokx-cropcenter:100:100.jpeg?dr=14579&refresh_token=a85d6a5f&x-expires=1793311200&x-signature=VrhEPuqiZyUDaG57P7%2B8ceTKBNM%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=my2" alt="Foto de Ivad" referrerpolicy="no-referrer" loading="eager">
+   <div class="designer-info"><strong>Ivad</strong><span>@ivad.lives</span></div>
+  </section>
+ </div>
+ <div class="pxbar" aria-hidden="true"><div class="pxfill" id="bootBar"></div></div><div class="pc" id="bootPc">0%</div>
+</div></div>
 <script>
 /* Carregamento: sobe até 100% e então abre o menu principal do jogo.
    Foto do criador: coloque o arquivo "perfil.jpg" na mesma pasta deste HTML (ou troque o caminho em src acima). */
 (function () {
   var boot = document.getElementById('boot'), bar = document.getElementById('bootBar'), pc = document.getElementById('bootPc'), img = document.getElementById('bootImg'), letter = document.getElementById('bootLetter');
-  var imgDone = false, pageDone = false, fontsDone = false, t0 = performance.now(), MIN = 2300, shown = 0, finished = false;
+  var vid = document.getElementById('bootVideo'), vidDone = !vid, imgDone = false, pageDone = false, fontsDone = false, t0 = performance.now(), MIN = 2300, shown = 0, finished = false;
   var cp = ''; try { cp = localStorage.getItem('sr_creator_photo') || ''; } catch (_) {} if (cp) img.src = cp;
   img.onload = function () { imgDone = true; }; var tried = false; img.onerror = function () { if (!tried) { tried = true; img.src = 'perfil.jpg'; return; } imgDone = true; img.style.display = 'none'; letter.style.display = 'block'; }; // se o link falhar, tenta perfil.jpg e por fim a letra S
   if (img.complete) { if (img.naturalWidth) imgDone = true; else if (img.src) img.onerror(); }
+  if (vid) { var vd = function () { vidDone = true; }; vid.addEventListener('loadeddata', vd); vid.addEventListener('error', vd); vid.addEventListener('stalled', vd);
+    var pl = vid.play && vid.play(); if (pl && pl.catch) pl.catch(function () {}); } // muted + playsinline: o navegador deixa tocar sozinho
   addEventListener('load', function () { pageDone = true; });
   if (document.readyState === 'complete') pageDone = true;
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { fontsDone = true; }, function () { fontsDone = true; });
-  setTimeout(function () { imgDone = pageDone = fontsDone = true; }, 7000); // segurança: nunca trava
+  setTimeout(function () { imgDone = pageDone = fontsDone = vidDone = true; }, 7000); // segurança: nunca trava
   function tick() {
-    var ready = imgDone && pageDone && fontsDone, el = performance.now() - t0;
+    var ready = imgDone && pageDone && fontsDone && vidDone, el = performance.now() - t0;
     var target = Math.min(100, el / MIN * 100); if (!ready) target = Math.min(target, 92);
     shown += (target - shown) * .25; if (target - shown < .4) shown = target;
-    var v = Math.floor(shown); bar.style.width = shown + '%'; pc.textContent = v + '%';
+    var v = Math.floor(shown); bar.style.width = (Math.floor(shown / 5) * 5) + '%'; pc.textContent = v + '%'; // barra anda em blocos de 5% (pixel art)
     if (shown >= 99.9 && ready && !finished) { finished = true; bar.style.width = '100%'; pc.textContent = '100%'; setTimeout(function () { boot.classList.add('out'); setTimeout(function () { boot.remove(); }, 700); }, 300); return; }
     requestAnimationFrame(tick);
   }
