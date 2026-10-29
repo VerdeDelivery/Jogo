@@ -738,7 +738,9 @@ function drawSettings() {
 function setMsg(s, t, ok) { const e = $(s); e.textContent = t; e.className = 'msg ' + (ok ? 'ok' : 'err'); }
 
 /* ---------- 3. JOGO ---------- */
-const Z0 = 400, ZMAX = 5200, TH = 110, COLORS = ['#e8453c', '#27b4a3', '#2f7bff', '#ff7a1a'];
+const RAMP_LEN = 320; // comprimento da rampa que sobe até o teto do trem
+const CAMZ = 1.2; // UPDATE 9: zoom da câmera (1 = antigo; maior = mais perto do personagem, como no Subway Surfers)
+const Z0 = 330, ZMAX = 5200, TH = 110, COLORS = ['#e8453c', '#27b4a3', '#2f7bff', '#ff7a1a'];
 // Personagens: hood = blusa, pants = calça, cap = boné/cabelo/mochila, acc = acessório (cap, beanie, phones, spikes)
 const CHARS = [
   { n: 'Jake', hood: '#2f7bff', pants: '#1f3d99', cap: '#ffd21f', skin: '#e8a979', acc: 'cap' },
@@ -926,7 +928,14 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 
 let ncCur = 0, ncBest = 0; // tempo (ms) sem pegar moeda: atual e melhor sequência da corrida
 let layI = 0, layPend = [];
-function reset() { layI = 0; layPend = []; ncCur = ncBest = 0; dist = 0; coins = 0; objs = []; nextWz = 1500; speed = LC.speed0; tAccum = 0; tFrozen = false; msgT = 0; pl = { lane: 0, px: 0, jy: 0, vy: 0, roll: 0, prev: 0, inv: 0, stun: 0, floor: 0, buf: 0, coy: 0 }; guard = { t: 0, age: 0 }; board = { t: 0, cd: 0 }; trail = []; slideDust = []; mtArm = null; mtNextAt = 6500; }
+/* ---------- UPDATE 9: a dificuldade para de subir aos 45 segundos ----------
+   Velocidade, espaçamento e quantidade de obstáculos crescem com a distância (dist) até chegar
+   no ponto onde se completam 45 s de jogo; depois disso ficam congelados nesse nível. */
+const DIFF_SECS = 45;
+var diffCapDist;
+function calcDiffCap() { let t = 0, d = 0; while (t < DIFF_SECS) { const sp = Math.min(LC.speedMax, LC.speed0 + d * LC.gain); d += sp * .01; t += .01; } diffCapDist = d; }
+const dd = () => Math.min(dist, diffCapDist || 51000);
+function reset() { calcDiffCap(); layI = 0; layPend = []; ncCur = ncBest = 0; dist = 0; coins = 0; objs = []; nextWz = 1500; speed = LC.speed0; tAccum = 0; tFrozen = false; msgT = 0; pl = { lane: 0, px: 0, jy: 0, vy: 0, roll: 0, prev: 0, inv: 0, stun: 0, floor: 0, buf: 0, coy: 0 }; guard = { t: 0, age: 0 }; board = { t: 0, cd: 0 }; trail = []; slideDust = []; mtArm = null; mtNextAt = 6500; }
 function isFS() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
 function goFS() { const e = document.documentElement, f = e.requestFullscreen || e.webkitRequestFullscreen; if (f && !isFS()) try { const r = f.call(e); if (r && r.catch) r.catch(() => {}); } catch (x) {} }
 function outFS() { const f = document.exitFullscreen || document.webkitExitFullscreen; if (f && isFS()) try { f.call(document); } catch (x) {} }
@@ -1155,29 +1164,55 @@ const steamOn = () => { const M = MAPS[CFG.map]; if (M.veh) return true; return 
 function spawn() {
   while (nextWz < dist + ZMAX) {
     if (!mtArm && steamOn() && dist > mtNextAt) mtArm = { l: [-1, 0, 1][Math.floor(Math.random() * 3)] };
-    let free = [-1, 0, 1][Math.floor(Math.random() * 3)]; const gap = Math.max(420, 800 - dist / 80); let maxLen = 0;
+    let free = [-1, 0, 1][Math.floor(Math.random() * 3)]; const gap = Math.max(300, 640 - dd() / 90); let maxLen = 0;
     if (mtArm && free === mtArm.l) free = mtArm.l === 0 ? (Math.random() < .5 ? -1 : 1) : 0;
-    if (nextWz > 4000 && Math.random() < .22) { // linha de 3 moedas: dá para passar pulando por cima, sem pegar
-      for (const l of [-1, 0, 1]) { if (mtArm && l === mtArm.l) continue; for (let k = 0; k < 3; k++) objs.push({ t: 'coin', l, wz: nextWz + k * 170, len: 0 }); }
-      nextWz += 700 + gap; continue;
+    const rp = Math.random();
+    if (nextWz > 4000 && rp < .3) { // linha de moedas nas 3 pistas (4 moedas): só passa pulando por cima, sem pegar
+      for (const l of [-1, 0, 1]) { if (mtArm && l === mtArm.l) continue; for (let k = 0; k < 4; k++) objs.push({ t: 'coin', l, wz: nextWz + k * 150, len: 0 }); }
+      nextWz += 640 + gap; continue;
+    }
+    if (nextWz > 4000 && rp < .42) { // 🐍 COBRINHA: moedas zigue-zague passando por todas as pistas
+      let ll = [-1, 0, 1][Math.floor(Math.random() * 3)], dir = Math.random() < .5 ? -1 : 1;
+      for (let k = 0; k < 12; k++) { if (k && k % 3 === 0) { if (ll + dir < -1 || ll + dir > 1) dir = -dir; ll += dir; } if (!(mtArm && ll === mtArm.l)) objs.push({ t: 'coin', l: ll, wz: nextWz + k * 120, len: 0 }); }
+      nextWz += 1440 + gap; continue;
+    }
+    if (nextWz > 4000 && rp < .52) { // 🌈 ARCO: moedas no alto e embaixo, quem pula pega e quem corre também
+      const al = [-1, 0, 1][Math.floor(Math.random() * 3)];
+      if (!(mtArm && al === mtArm.l)) [30, 70, 105, 130, 105, 70, 30].forEach((hh, q) => objs.push({ t: 'coin', l: al, wz: nextWz + q * 125, len: 0, h: hh }));
+      nextWz += 900 + gap; continue;
     }
     for (const l of [-1, 0, 1]) {
-      if ((mtArm && l === mtArm.l) || l === free || Math.random() > Math.min(.65, .35 + dist / 60000)) continue; // começo mais fácil
+      if ((mtArm && l === mtArm.l) || l === free || Math.random() > Math.min(.65, .35 + dd() / 60000)) continue; // começo mais fácil (a dificuldade para de subir aos 45 s)
       const r = Math.random(), t = r < .3 ? 'barrier' : r < .5 ? 'bar' : r < .65 ? 'wall' : 'train', len = t === 'train' ? rnd(500, 1200) : t === 'wall' ? 90 : t === 'barrier' ? 120 : 40;
-      objs.push({ t, l, wz: nextWz, len, col: COLORS[Math.floor(Math.random() * 4)] }); maxLen = Math.max(maxLen, len);
-      if (t === 'train' && Math.random() < .6) { // moedas no teto (como no original)
+      // 🛗 RAMPA: às vezes o trem vem com uma rampa na frente, dá para subir no teto sem pular (como no Subway Surfers)
+      const ramp = t === 'train' && nextWz > 3000 && Math.random() < .32, off0 = ramp ? RAMP_LEN : 0;
+      if (ramp) objs.push({ t: 'ramp', l, wz: nextWz, len: RAMP_LEN });
+      objs.push({ t, l, wz: nextWz + off0, len, col: COLORS[Math.floor(Math.random() * 4)] }); maxLen = Math.max(maxLen, off0 + len);
+      let end = off0 + len;
+      // 🚆 TRENS LIGADOS: outro trem logo depois com um vão curtinho, dá para pular de teto em teto (corredor de teto)
+      if (t === 'train' && Math.random() < .3) {
+        const g2 = rnd(150, 260), len2 = rnd(450, 900);
+        objs.push({ t: 'train', l, wz: nextWz + end + g2, len: len2, col: COLORS[Math.floor(Math.random() * 4)] });
+        end += g2 + len2;
+        if (Math.random() < .35) { objs.push({ t: 'ramp', l, wz: nextWz + end + 40, len: RAMP_LEN, down: true }); end += 40 + RAMP_LEN; } // rampa de descida
+        maxLen = Math.max(maxLen, end);
+      }
+      // moedas no teto (mais moedas = mais difícil para quem faz nocoin)
+      if (t === 'train' && Math.random() < .8) {
         // às vezes (só em trem comprido) as moedas fazem um aro no alto e voltam pro teto: dá para passar por baixo dele
         const arc = len >= 1000 && Math.random() < .5, a0 = arc ? 60 + 170 * Math.floor(Math.random() * Math.floor((len - 60 - 660 - 60) / 170 + 1)) : -1;
         let off = 60;
         while (off <= len - 60) {
-          objs.push({ t: 'coin', l, wz: nextWz + off, len: 0, h: TH }); // moeda reta no teto
-          if (off === a0) { [55, 90, 105, 90, 55].forEach((hh, q) => objs.push({ t: 'coin', l, wz: nextWz + off + 110 * (q + 1), len: 0, h: TH + hh })); off += 660; } // aro de 5 moedas, termina em outra moeda reta
+          objs.push({ t: 'coin', l, wz: nextWz + off0 + off, len: 0, h: TH }); // moeda reta no teto
+          if (off === a0) { [55, 90, 105, 90, 55].forEach((hh, q) => objs.push({ t: 'coin', l, wz: nextWz + off0 + off + 110 * (q + 1), len: 0, h: TH + hh })); off += 660; } // aro de 5 moedas, termina em outra moeda reta
           else off += 170;
         }
       }
     }
-    for (let k = 0; k < 5; k++) objs.push({ t: 'coin', l: free, wz: nextWz + k * 170, len: 0 });
-    nextWz += Math.max(maxLen, 720) + gap;
+    for (let k = 0; k < 7; k++) objs.push({ t: 'coin', l: free, wz: nextWz + k * 130, len: 0 }); // pista livre sempre cheia de moeda
+    // moedas também em cima de barreiras e muros baixos, e na rampa
+    for (const o of objs) if (!o._c && o.wz >= nextWz && o.wz <= nextWz + 5 && (o.t === 'wall' || o.t === 'barrier' || o.t === 'ramp')) { o._c = 1; const hh = o.t === 'ramp' ? 0 : TOPS[o.t]; if (o.t === 'ramp') { for (let k = 0; k < Math.floor(o.len / 130); k++) objs.push({ t: 'coin', l: o.l, wz: o.wz + 20 + k * 130, len: 0, h: TH * (o.down ? 1 - (k + .5) * 130 / o.len : (k + .5) * 130 / o.len) }); } else objs.push({ t: 'coin', l: o.l, wz: o.wz + o.len / 2, len: 0, h: hh }); }
+    nextWz += Math.max(maxLen, 640) + gap;
   }
 }
 // Altura do "chão" em cima de cada objeto: dá para pular e andar por cima deles (como no Subway Surfers)
@@ -1191,7 +1226,7 @@ function update(dt, realMs) {
   hud();
 }
 function step(dt, realMs, first) {
-  speed = Math.min(LC.speedMax, LC.speed0 + dist * LC.gain) * (pl.stun > 0 ? .55 : 1); dist += speed * dt; pl.inv -= dt; pl.stun -= dt; msgT -= dt; board.t -= dt; board.cd -= dt;
+  speed = Math.min(LC.speedMax, LC.speed0 + dd() * LC.gain) * (pl.stun > 0 ? .55 : 1); dist += speed * dt; pl.inv -= dt; pl.stun -= dt; msgT -= dt; board.t -= dt; board.cd -= dt;
   for (const p of trail) p.life += dt; if (first) { trail = trail.filter(p => p.life < .9); // rastros
     if (CFG.trail !== 'off') trail.push({ l: pl.px + rnd(-.07, .07), wz: dist, h: pl.jy + rnd(4, 26), life: 0 }); }
   if (guard.t > 0) { guard.t -= dt; guard.age += dt; }
@@ -1221,6 +1256,13 @@ function step(dt, realMs, first) {
     if (o.t === 'steam') steamSnd(o, z, dt);
     if (!near || !(z < 40 && z + o.len > -40)) continue;
     if (o.t === 'steam') { { const tp = STEAM_TOP[o.veh] || 110; if (pl.jy >= tp - 18) { if (pl.vy <= 0 && pl.jy <= tp + 1) { pl.jy = tp; pl.vy = 0; top = Math.max(top, tp); } continue; } } if (pl.inv <= 0) return crash({ wagon:'ATROPELADO PELA CARROÇA!', ufo:'ABDUZIDO PELO OVNI!', bonde:'ATROPELADO PELO BONDINHO!', bus:'ATROPELADO PELO ÔNIBUS!', ghost:'ASSUSTADO PELO TREM FANTASMA!', sled:'ATROPELADO PELO TRENÓ!', buggy:'ATROPELADO PELO BUGGY!', logtruck:'ESMAGADO PELO CAMINHÃO DE TORAS!', minecart:'ATROPELADO PELA VAGONETA!', bullet:'ATROPELADO PELO TREM-BALA!', metro:'ATROPELADO PELO METRÔ!' }[o.veh] || 'ATROPELADO PELA MARIA FUMAÇA!'); continue; } // não dá para passar por cima: tem que trocar de pista
+    if (o.t === 'ramp') { // rampa: o chão sobe (ou desce) suave; de lado, com o pé baixo, é parede
+      const u = Math.max(0, Math.min(1, (dist - o.wz) / o.len)), h = TH * (o.down ? 1 - u : u);
+      if (pl.jy >= h - 26) { if (pl.vy <= 0 && pl.jy <= h + (o.down ? 30 : 2)) { pl.jy = h; pl.vy = 0; } if (pl.jy <= h + 2) top = Math.max(top, h); }
+      else if (pl.inv <= 0) { pl.lane = pl.prev !== o.l ? pl.prev : (o.l > 0 ? o.l - 1 : o.l + 1); stumble(); }
+      else pl.lane = pl.prev !== o.l ? pl.prev : (o.l > 0 ? o.l - 1 : o.l + 1);
+      continue;
+    }
     const tp = TOPS[o.t];
     if (tp !== undefined) {
       if (pl.jy >= tp - 18) { // pés na altura do topo (ou acima): sobe e anda por cima; no ar passa por cima
@@ -1273,7 +1315,7 @@ async function showDonations() {
 let W, H, HZ, GY, LW, U, PU;
 function resize() {
   const maxD = CFG.graphics==='suave' ? 0.85 : CFG.graphics==='padrao' ? 1.15 : CFG.graphics==='ultra' ? 1.5 : 2; const d = Math.min(maxD, devicePixelRatio || 1, Math.sqrt(2400000/Math.max(1,innerWidth*innerHeight))); W = Math.max(1, innerWidth); H = Math.max(1, innerHeight); cv.width = Math.round(W * d); cv.height = Math.round(H * d); cv.style.width = W + 'px'; cv.style.height = H + 'px'; g.setTransform(d, 0, 0, d, 0, 0);
-  HZ = H * .33; GY = H * .87; LW = Math.min(W * .3, 250); U = Math.min(H / 720, W / 420) * 1.22; PU = U * .62;
+  HZ = H * .33; GY = H * .87; LW = Math.min(W * .3, 250); U = Math.min(H / 720, W / 420) * 1.22 * CAMZ; PU = U * .62;
 }
 addEventListener('resize', resize); resize();
 // Projeção: pista (-1,0,1) e distância z → posição na tela e escala s
@@ -1552,23 +1594,78 @@ function trainSide(o, z) { // janelas e faixas na lateral do trem
 }
 function shade(hex, k) { const n = parseInt(hex.slice(1), 16); const c = v => Math.max(0, Math.min(255, Math.round(v * k))); return `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`; }
 
+// 🧱 Minecraft: pinta "pixels" de textura na frente de um bloco (r = retorno do box())
+function mcFace(r, cols, rows, pal, seed) {
+  const fw = r.w * r.a.s, fh = r.ya - r.ta, x0 = r.a.x - fw / 2; if (fw < 5 || fh < 5) return;
+  if (fw < 12) { g.fillStyle = pal[seed % pal.length]; g.globalAlpha *= .6; g.fillRect(x0, r.ta, fw, fh * .5); g.globalAlpha /= .6; return; }
+  const cw = fw / cols, ch = fh / rows;
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { g.fillStyle = pal[Math.floor(hash(seed * 7 + i * 7 + j * 13, i + j * 5 + 3) * pal.length)]; g.fillRect(x0 + i * cw, r.ta + j * ch, cw + .6, ch + .6); }
+}
 // Cenário lateral de cada mapa: prédios com janelas, cactos, palmeiras, pinheiros, pedras de vulcão
 function deco(sd, k, z, M, row = 0) {
   const h = hash(k + row * 13, sd), kind = (row && M.deco2) || M.deco || 'city', INK = '#14172e';
-  if (hash(k + row * 5, sd + 7) < .25) return;
+  if (hash(k + row * 5, sd + 7) < .1) return;
+  // UPDATE 9: pedras, arbustos e tufos perto da pista para os mapas não ficarem vazios
+  if (row === 0 && ['voxtree', 'cactus', 'palm', 'pine', 'rock', 'crater', 'dino', 'fern'].includes(kind) && hash(k, sd + 55) < .65) {
+    const fl = sd * (1.95 + hash(k, sd + 56) * .5), ft = hash(k, sd + 57);
+    const base = M.deco === 'cactus' ? '#b8864a' : M.deco === 'palm' ? '#d4b86a' : M.deco === 'rock' ? '#4a2a30' : M.moon ? '#7a7f90' : M.deco === 'pine' ? '#2d7a3f' : M.deco === 'dino' ? '#5f8a45' : '#4fa03a';
+    box(fl, z + 40, z + 40 + 30 + ft * 20, 16 + ft * 26, base, .3); if (ft > .45) box(fl + sd * .2, z + 52, z + 76, 10 + ft * 14, shade(base, .85), .22);
+    if (M.deco === 'rock' && ft > .6) { const q = P(fl, z + 55), s2 = q.s * U; g.fillStyle = '#ff7a1a'; g.fillRect(q.x - 3 * s2, q.y - 30 * s2, 6 * s2, 6 * s2); }
+  }
   // Cenários exclusivos, compostos por formas próprias (não são apenas recolorações dos mapas antigos).
-  if (kind === 'pixelMine') {
-    const lx=sd*(2.15+h*.72+row*1.5), hh=74+hash(k,sd+18)*115;
-    // Tronco quadriculado e copa em blocos com sombreamento em pixel-art.
-    box(lx,z,z+58,hh*.52,'#79502e',.34); box(lx,z+3,z+55,hh*.46,'#8e6337',.23);
-    const colors=['#3f8738','#4f9d3d','#67b84a','#2e722f','#78c451'];
-    const r=box(lx,z,z+76,hh,colors[k%colors.length],.78,hh*.18), fw=r.w*r.a.s, fh=r.a.y-r.ta;
-    g.fillStyle='#2d6e2d';g.fillRect(r.a.x-fw*.5,r.ta+fh*.68,fw,fh*.32);
-    g.fillStyle='#7dc957';g.fillRect(r.a.x-fw*.5,r.ta,fw*.28,fh*.23);g.fillStyle='#3d8535';g.fillRect(r.a.x+fw*.18,r.ta+fh*.25,fw*.32,fh*.18);
-    // quadradinhos de textura determinísticos, como tiles 16x16 ampliados
-    for(let py=0;py<4;py++)for(let px=0;px<4;px++){g.fillStyle=colors[Math.floor(hash(k*17+px,py+sd)*colors.length)];g.globalAlpha=.75;g.fillRect(r.a.x-fw*.42+px*fw*.22,r.ta+py*fh*.22,Math.max(1,fw*.16),Math.max(1,fh*.15));}g.globalAlpha=1;
-    if(k%3===0){box(lx+sd*.2,z,z+38,hh*.45,'#8a8f96',.3);box(lx+sd*.2,z+3,z+35,hh*.39,'#aeb4ba',.22);}
-    return;
+  if (kind === 'pixelMine') { // 🧱 UPDATE 9: cenário no estilo Minecraft (cada bloco tem textura de pixels, com vários tipos de coisas)
+    const lx = sd * (2.15 + h * .72 + row * 1.5), rr = hash(k * 3 + row, sd + 99), hh = 74 + hash(k, sd + 18) * 80;
+    const LEAF = ['#2f7d2a', '#3f9438', '#256a22', '#4aa83f', '#357f2f'], LOG = ['#6b4a2a', '#5a3c20', '#7a5632', '#4e3419'], BIR = ['#e3dfd2', '#d6d2c3', '#e3dfd2', '#cfcabb', '#3a3a36'], STONE = ['#8a8a8a', '#7d7d7d', '#999999', '#8a8a8a', '#6f6f6f'];
+    const blk = (zz, len, top, base, wd, col, pal, seed, c = 4, r = 4, dl = 0) => { const q = box(lx + dl, zz, zz + len, top, col, wd, base); mcFace(q, c, r, pal, seed); return q; };
+    if (rr < .26 || rr < .38) { // árvore: carvalho (tronco de tora + copa de folhas) ou bétula (tronco branco)
+      const birch = rr >= .26, trunk = hh * .55, pal = birch ? BIR : LOG;
+      blk(z + 22, 26, trunk, 0, .2, birch ? '#e3dfd2' : '#6b4a2a', pal, k, 2, 5);
+      const leafPal = birch ? ['#6ea84a', '#7dba55', '#5f9740', '#86c35e'] : LEAF;
+      blk(z, 70, trunk + hh * .38, trunk * .72, .72, leafPal[0], leafPal, k + 5, 5, 4);
+      blk(z + 14, 42, trunk + hh * .62, trunk + hh * .38, .46, leafPal[1], leafPal, k + 9, 3, 2);
+      return;
+    }
+    if (rr < .5) { // pilha de pedra com minério (carvão, ferro ou diamante)
+      const ore = ['#2b2b2b', '#d8af93', '#4be0d4'][k % 3], pal = STONE.concat([ore, ore]);
+      blk(z, 54, 34, 0, .46, '#8a8a8a', pal, k, 4, 4); blk(z + 8, 38, 66, 34, .34, '#7d7d7d', pal, k + 3, 3, 4, sd * .06);
+      return;
+    }
+    if (rr < .62) { // grama alta e flores (dente-de-leão, papoula, flor azul)
+      const fc = ['#f6d84a', '#d9322e', '#4aa3ff', '#ffffff'][k % 4];
+      for (let j = 0; j < 5; j++) { const zz = z + j * 16, p = P(lx + (j - 2) * .1 * sd, zz), s2 = p.s * U; if (zz < -200) continue; g.fillStyle = j % 2 ? '#3f9438' : '#56b04a'; g.fillRect(p.x - 3 * s2, p.y - (24 + (j % 3) * 7) * s2, 6 * s2, (24 + (j % 3) * 7) * s2); if (j % 2) { g.fillStyle = '#2f7d2a'; g.fillRect(p.x - 9 * s2, p.y - 16 * s2, 6 * s2, 12 * s2); g.fillStyle = fc; g.fillRect(p.x - 6 * s2, p.y - 40 * s2, 12 * s2, 12 * s2); g.fillStyle = '#ffd23a'; g.fillRect(p.x - 2.5 * s2, p.y - 36 * s2, 5 * s2, 5 * s2); } }
+      return;
+    }
+    if (rr < .7) { // TNT
+      const q = box(lx, z, z + 46, 46, '#d6402f', .42), fw = q.w * q.a.s, fh = q.ya - q.ta, x0 = q.a.x - fw / 2;
+      mcFace(q, 4, 4, ['#d6402f', '#c43828', '#e04c3a'], k, 4, 4); g.fillStyle = '#f2efe6'; g.fillRect(x0, q.ta + fh * .36, fw, fh * .28);
+      if (fw > 14) { g.fillStyle = '#2a2a2a'; g.font = '900 ' + Math.max(6, fh * .22) + 'px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TNT', q.a.x, q.ta + fh * .5); }
+      return;
+    }
+    if (rr < .78) { // abóbora com carinha
+      const q = blk(z, 46, 44, 0, .42, '#d98a1f', ['#d98a1f', '#c97a17', '#e89a2a', '#b86d12'], k, 4, 4), fw = q.w * q.a.s, fh = q.ya - q.ta, x0 = q.a.x - fw / 2;
+      g.fillStyle = '#3a2208'; g.fillRect(x0 + fw * .2, q.ta + fh * .25, fw * .18, fh * .18); g.fillRect(x0 + fw * .62, q.ta + fh * .25, fw * .18, fh * .18); g.fillRect(x0 + fw * .25, q.ta + fh * .6, fw * .5, fh * .14);
+      return;
+    }
+    if (rr < .84) { // mesa de trabalho
+      const q = blk(z, 46, 44, 0, .42, '#9a6a3a', ['#9a6a3a', '#8a5a2e', '#a97a46', '#6b4423'], k, 4, 4), fw = q.w * q.a.s, fh = q.ya - q.ta, x0 = q.a.x - fw / 2;
+      g.fillStyle = '#5a3a1c'; g.fillRect(x0, q.ta + fh * .1, fw, fh * .14); g.fillStyle = '#d0d0d0'; g.fillRect(x0 + fw * .15, q.ta + fh * .45, fw * .2, fh * .3); g.fillStyle = '#4a4a4a'; g.fillRect(x0 + fw * .6, q.ta + fh * .45, fw * .22, fh * .3);
+      return;
+    }
+    if (rr < .91) { // creeper 💚
+      const GP = ['#4fa84a', '#3f8f3a', '#5fba58', '#2f7a2c'];
+      blk(z + 6, 30, 38, 0, .3, '#3f8f3a', GP, k, 3, 3); const q = blk(z + 2, 38, 100, 62, .34, '#4fa84a', GP, k + 2, 4, 4), fw = q.w * q.a.s, fh = q.ya - q.ta, x0 = q.a.x - fw / 2;
+      blk(z + 6, 30, 66, 36, .3, '#4fa84a', GP, k + 4, 3, 3);
+      g.fillStyle = '#101010'; g.fillRect(x0 + fw * .15, q.ta + fh * .22, fw * .24, fh * .24); g.fillRect(x0 + fw * .61, q.ta + fh * .22, fw * .24, fh * .24); g.fillRect(x0 + fw * .36, q.ta + fh * .46, fw * .28, fh * .26); g.fillRect(x0 + fw * .26, q.ta + fh * .62, fw * .12, fh * .22); g.fillRect(x0 + fw * .62, q.ta + fh * .62, fw * .12, fh * .22);
+      return;
+    }
+    if (rr < .97) { // porquinho
+      const PP = ['#f0a8a8', '#e89a9a', '#f6b8b8', '#dd8b8b'];
+      for (const dz of [8, 50]) box(lx - .1, z + dz, z + dz + 12, 14, '#c97f7f', .1); box(lx + .1, z + 8, z + 20, 14, '#c97f7f', .1);
+      blk(z, 66, 36, 14, .42, '#f0a8a8', PP, k, 4, 3); const q = blk(z - 18, 24, 40, 18, .3, '#f6b8b8', PP, k + 1, 3, 3), fw = q.w * q.a.s, fh = q.ya - q.ta, x0 = q.a.x - fw / 2;
+      g.fillStyle = '#d98080'; g.fillRect(x0 + fw * .3, q.ta + fh * .5, fw * .4, fh * .3); g.fillStyle = '#1a1a1a'; g.fillRect(x0 + fw * .12, q.ta + fh * .2, fw * .14, fh * .14); g.fillRect(x0 + fw * .74, q.ta + fh * .2, fw * .14, fh * .14);
+      return;
+    }
+    { box(lx, z, z + 10, 46, '#6b4a2a', .08); const p = P(lx, z + 5), s2 = p.s * U; g.fillStyle = '#ffd23a'; g.fillRect(p.x - 5 * s2, p.y - 58 * s2, 10 * s2, 12 * s2); g.fillStyle = '#ff7a1a'; g.fillRect(p.x - 3 * s2, p.y - 54 * s2, 6 * s2, 8 * s2); return; } // tocha
   }
   if (kind === 'haunt' || kind === 'grave') {
     const lx=sd*(2.1+h*.75+row*1.4), hh=kind==='haunt'?100+h*110:32+h*25;
@@ -1691,7 +1788,7 @@ function drawBiomeHorizon(M, now) {
   };
   if (M.minecraft) {
     // Horizonte em degraus, montanhas quadradas e nuvens em blocos.
-    g.fillStyle='#80c8f4'; for(let i=0;i<8;i++){const x=((i*137-shift*.18)%(W+180)+W+180)%(W+180)-90,y=h*(.28+(i%3)*.075),w=(45+i%4*22)*U,hh=(12+i%3*8)*U;g.fillRect(x,y,w,hh);}
+    for(let i=0;i<7;i++){const x=((i*173-shift*.18)%(W+260)+W+260)%(W+260)-130,y=h*(.12+(i%3)*.13),w=(70+i%3*38)*U,hh=14*U;g.fillStyle='rgba(255,255,255,.92)';g.fillRect(x,y,w,hh);g.fillRect(x+w*.18,y-hh*.9,w*.5,hh);g.fillRect(x-w*.12,y+hh*.5,w*.3,hh*.6);g.fillStyle='rgba(200,225,250,.9)';g.fillRect(x,y+hh*.65,w,hh*.35);} // nuvens quadradas
     for(let layer=0;layer<3;layer++){const base=h*(.72+layer*.09),step=Math.max(10,22*U);g.fillStyle=['#75b85b','#5b9848','#407b3b'][layer];for(let x=-step-(shift*(.12+layer*.1)%step);x<W+step;x+=step){const n=Math.floor(hash(Math.floor(x/step)+layer*41,layer+6)*4);g.fillRect(x,base-n*step,step+1,(h-base)+n*step);g.fillStyle=['#4f963f','#3f8337','#2d6d30'][layer];g.fillRect(x,base-n*step,step+1,Math.max(2,step*.2));g.fillStyle=['#75b85b','#5b9848','#407b3b'][layer];}}
     return;
   }
@@ -1832,11 +1929,22 @@ function drawWorld(now) {
 
   if (!M.rio) { const bw = W / 12; for (const [al, kk, mh] of [[.5, 21, 70], [.9, 33, 38]]) { g.globalAlpha = al; g.fillStyle = shade(M.gnd, al < .6 ? 1.05 : .85); for (let i = -1; i < 14; i++) { const hh = (14 + hash(i + kk, 11) * mh) * U; g.fillRect(i * bw, HZ - hh, bw + 1, hh); } } g.globalAlpha = 1; }
   const terrain = g.createLinearGradient(0,HZ,0,H); terrain.addColorStop(0,shade(M.gnd,1.08)); terrain.addColorStop(.48,M.gnd); terrain.addColorStop(1,shade(M.gnd,.72)); g.fillStyle=terrain; g.fillRect(0,HZ,W,H-HZ);
-  if (M.pixelWorld) { // mosaico procedural em pixel art: grama, terra e pedra em tiles grandes
-    const tile=Math.max(7,Math.round(12*U)), off=Math.floor((dist*.05)%tile);
-    const pal=['#4f9138','#5fa544','#72b94b','#39752e','#87613d','#9b7448'];
-    for(let y=HZ;y<H;y+=tile)for(let x=-tile-off;x<W;x+=tile){const seed=Math.floor(x/tile)+Math.floor(y/tile)*31+Math.floor(dist/90);g.fillStyle=pal[Math.floor(hash(seed,17)*pal.length)];g.globalAlpha=.2+hash(seed,18)*.22;g.fillRect(x,y,tile-1,tile-1);if(y<HZ+tile){g.fillStyle='#438632';g.globalAlpha=.55;g.fillRect(x,y,tile-1,Math.max(2,tile*.22));}}
-    g.globalAlpha=1;
+  if (M.pixelWorld) { // 🟩 blocos de grama estilo Minecraft em perspectiva (alinhados ao mundo, passam conforme você corre)
+    const GR = ['#4e8a35', '#6db04a', '#5a9b3d', '#7bc455', '#427a2e', '#62a841'], DIRT = ['#866043', '#79553a'];
+    let zf = ZMAX;
+    for (let kz = Math.floor((dist + ZMAX) / 100); ; kz--) {
+      const z0 = kz * 100 - dist; if (z0 < -200) break;
+      const bd = z0 > 2600 ? 400 : z0 > 1000 ? 200 : 100, kk = Math.floor(kz * 100 / bd); if (z0 > 1000 && (kz * 100) % bd) continue;
+      const za = Math.max(z0, -200), zb = Math.min(z0 + bd, ZMAX), pa = P(0, za), pb = P(0, zb); if (pa.y <= pb.y) continue;
+      const mult = Math.max(1, Math.round(5 / (LW * .5 * pa.s))), step = .5 * mult, lw = LW * step * pa.s, y = pb.y, hgt = pa.y - pb.y + 1;
+      const lmin = cam - (W / 2) / (LW * pa.s) - step, lmax = cam + (W / 2) / (LW * pa.s) + step;
+      for (let wi = Math.floor(lmin / step); wi <= Math.ceil(lmax / step); wi++) {
+        const l0 = wi * step; if (l0 > -1.9 && l0 + step < 1.9) continue; // o miolo é a pista
+        const x = W / 2 + (l0 - cam) * LW * pa.s, v = hash(wi * 31 + kk, kk + 5);
+        g.fillStyle = v < .05 ? DIRT[wi & 1] : GR[Math.floor(v * 97) % GR.length]; g.fillRect(x, y, lw + 1, hgt);
+        if (lw > 9) { const v2 = hash(wi + kk * 3, 9); g.fillStyle = GR[Math.floor(v2 * 53) % GR.length]; g.fillRect(x + lw * .15, y + hgt * .2, lw * .3, hgt * .3); g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(x + lw * .55, y + hgt * .55, lw * .3, hgt * .3); }
+      }
+    }
   }
 
   { const tint=M.snow?'#ffffff':M.deco==='cactus'?'#ffe2a5':M.deco==='palm'?'#e8f7c8':M.deco==='rock'?'#ff815a':M.moon?'#e8ecff':'#ffffff'; g.save(); g.globalAlpha=.13; for(let i=0;i<58;i++){const k=Math.floor((dist+900)/180)+i, x=((hash(k,41)*W-dist*.035)%(W+18)+(W+18))%(W+18)-9, depth=Math.pow(hash(k,42),.72), y=HZ+depth*(H-HZ), size=(1+hash(k,43)*3)*U*(.45+depth); g.fillStyle=tint; if(M.deco==='cactus'||M.deco==='palm'){g.beginPath();g.ellipse(x,y,size*1.8,size*.55,0,0,7);g.fill();}else g.fillRect(x,y,size*1.6,size*.65);} g.restore(); }
@@ -1844,6 +1952,14 @@ function drawWorld(now) {
   // leito da pista
   const f = P(0, ZMAX), n = P(0, -200), half = 1.75;
   g.fillStyle = M.bed; g.beginPath(); g.moveTo(f.x - half * LW * f.s, f.y); g.lineTo(f.x + half * LW * f.s, f.y); g.lineTo(n.x + half * LW * n.s, n.y); g.lineTo(n.x - half * LW * n.s, n.y); g.fill();
+  if (M.pixelWorld) { // pedregulho/terra de Minecraft no leito da pista
+    const BP = ['#7c7c7c', '#8a8a8a', '#6e6e6e', '#979797', '#70513a', '#5f4330'];
+    for (let kz = Math.floor((dist + 3000) / 100); ; kz--) {
+      const z0 = kz * 100 - dist; if (z0 < -200) break; const pa = P(0, Math.max(z0, -200)), pb = P(0, z0 + 100); if (pa.y <= pb.y) continue;
+      for (let ci = -7; ci < 7; ci++) { const v = hash(ci * 17 + kz, kz + 2); const x = W / 2 + (ci * .25 - cam) * LW * pa.s; g.fillStyle = BP[Math.floor(v * 91) % BP.length]; g.globalAlpha = .5; g.fillRect(x, pb.y, LW * .25 * pa.s + 1, pa.y - pb.y + 1); }
+    }
+    g.globalAlpha = 1;
+  }
 
   for (const sx of [-1, 1]) { const ea = P(sx * half, ZMAX), eb = P(sx * half, -200), ew = .09 * LW; g.fillStyle = 'rgba(255,255,255,.3)'; g.beginPath(); g.moveTo(ea.x - ew * ea.s, ea.y); g.lineTo(ea.x + ew * ea.s, ea.y); g.lineTo(eb.x + ew * eb.s, eb.y); g.lineTo(eb.x - ew * eb.s, eb.y); g.fill(); }
   if (M.rio) {
@@ -1873,9 +1989,9 @@ function drawWorld(now) {
   if (!M.moon && !M.vox) { g.strokeStyle = 'rgba(30,34,60,.5)'; g.lineWidth = Math.max(1, 1.5 * U); for (const i of [-2, -1, 0, 1, 2]) { g.beginPath(); g.moveTo(W / 2 + i * W * .24, 0); g.lineTo(W / 2 + i * W * .02, HZ); g.stroke(); }
     g.strokeStyle = '#3a3f52'; for (let k = Math.floor((dist + ZMAX) / 700); k * 700 - dist > -60; k--) { const zz = k * 700 - dist, p = P(2.05, zz), q = P(-2.05, zz); g.lineWidth = Math.max(1, 6 * U * p.s); for (const e of [p, q]) { g.beginPath(); g.moveTo(e.x, e.y); g.lineTo(e.x, e.y - 300 * U * e.s); g.stroke(); } g.lineWidth = Math.max(1, 4 * U * p.s); g.beginPath(); g.moveTo(q.x, q.y - 300 * U * q.s); g.lineTo(p.x, p.y - 300 * U * p.s); g.stroke(); } }
   // prédios laterais + objetos, de longe para perto
-  const items = [], m = Math.floor(dist / 250);
-  for (let i = 21; i >= 0; i--) for (const sd of [-1, 1]) for (const row of [0, 1]) { const k = m + i, z = k * 250 - dist; if (z > -150) items.push({ z, b: { sd, k, row } }); }
-  for (const o of objs) { const z = o.wz - dist; if (z < ZMAX && z + o.len > -200) items.push({ z: (o.t === 'train' || o.t === 'steam' || o.t === 'wall' || o.t === 'barrier') ? (z < 40 && z + o.len > -40 ? 1 : z + o.len * .5) : z, o }); }
+  const items = [], m = Math.floor(dist / 190);
+  for (let i = 28; i >= 0; i--) for (const sd of [-1, 1]) for (const row of [0, 1]) { const k = m + i, z = k * 190 - dist; if (z > -150) items.push({ z, b: { sd, k, row } }); }
+  for (const o of objs) { const z = o.wz - dist; if (z < ZMAX && z + o.len > -200) items.push({ z: (o.t === 'train' || o.t === 'ramp' || o.t === 'steam' || o.t === 'wall' || o.t === 'barrier') ? (z < 40 && z + o.len > -40 ? 1 : z + o.len * .5) : z, o }); }
   items.sort((a, b) => b.z - a.z);
   let playerDone = false;
   const drawPlayer = () => { playerDone = true; player(now); };
@@ -1905,6 +2021,9 @@ function drawWorld(now) {
         for (let w2 = cs + 14; w2 < ce - 50; w2 += 78) { sideQuad(o.l, w2, w2 + 50, hb + 9, TH - 9, .32, '#2b3a52'); sideQuad(o.l, w2 + 4, w2 + 24, hb + 14, TH - 14, .32, 'rgba(160,215,255,.5)'); }
       } }
     else if (o.t === 'steam') drawSteam(o, z, now, al);
+    else if (o.t === 'ramp') { const N = 9, sl = o.len / N, rc = '#9aa3b5'; // rampa feita de degraus de bloco (voxel), do mais longe para o mais perto
+      for (let q = N - 1; q >= 0; q--) { const za = z + q * sl, zb = za + sl + 1; if (zb < NZ || za > ZMAX) continue; const hh = TH * (o.down ? 1 - (q + .5) / N : (q + .5) / N); box(o.l, Math.max(za, NZ), zb, Math.max(4, hh), q % 2 ? rc : shade(rc, .93), .8); }
+      const pa = P(o.l, Math.max(z, NZ)), pb = P(o.l, Math.min(z + o.len, ZMAX)); g.strokeStyle = '#ffe36a'; g.lineWidth = Math.max(1, 4 * pa.s); g.setLineDash([10 * pa.s, 8 * pa.s]); g.beginPath(); g.moveTo(pa.x, pa.y - 4 * U * pa.s); g.lineTo(pb.x, pb.y - (o.down ? 0 : TH * U * pb.s * .9)); g.stroke(); g.setLineDash([]); }
     else if (o.t === 'wall') { const nz = Math.max(z, NZ), lc = (Math.floor(o.wz / 97) % 2) ? '#8cc63f' : '#a5da4b'; // sebe/árvore de blocos
       box(o.l, nz, z + o.len, 55, '#6b4528', .2); const r = box(o.l, nz, z + o.len, TOPS.wall, lc, .82, 45), fh = r.ya - r.ta, fw = r.w * r.a.s;
       g.fillStyle = 'rgba(0,50,0,.10)'; for (let q = 1; q < 4; q++) g.fillRect(r.a.x - fw / 2, r.ta + fh * q / 4, fw, Math.max(1, 2.2 * r.a.s)); }
