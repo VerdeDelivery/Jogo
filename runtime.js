@@ -39,7 +39,7 @@
   requestAnimationFrame(sample);
 
   // Verificação de versão somente ao entrar/reabrir a página. Nunca recarrega durante uma corrida.
-  const VERSION = '12.0.0';
+  const VERSION = '13.0.2';
   try {
     const key = 'sr_deployed_version', guard = 'sr_version_reload_guard';
     const prior = localStorage.getItem(key);

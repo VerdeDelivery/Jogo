@@ -1364,8 +1364,8 @@ function step(dt, realMs, first) {
     for (let i=0;i<4;i++) { const f = i < 3; slideDust.push({ dx:rnd(-16,16), dy:f ? -rnd(14,34) : rnd(4,12), vx:rnd(-50,50), vy:f ? -rnd(10,40) : rnd(10,40), size:rnd(4,10), spin:rnd(-.4,.4), life:0 }); }
     if (slideDust.length > 90) slideDust.splice(0,slideDust.length-90);
   }
-  spawn();
-  if (mtArm && !objs.some(o => o.l === mtArm.l && o.t !== 'steam' && o.wz + o.len > dist - 40)) { // pista livre: o trem aparece lá longe
+  if (first) spawn();
+  if (first && mtArm && !objs.some(o => o.l === mtArm.l && o.t !== 'steam' && o.wz + o.len > dist - 40)) { // pista livre: o trem aparece lá longe
     const vh = MAPS[CFG.map].veh || 'steam'; objs.push({ t: 'steam', veh: vh, l: mtArm.l, wz: dist + ZMAX * .92, len: { wagon:440, ufo:360, bonde:620, bus:520, ghost:780, sled:520, buggy:300, logtruck:700, minecart:720, bullet:900, metro:780 }[vh] || 820, v: 560 }); mtArm = null; mtNextAt = dist + rnd(7000, 13000);
     vehHorn(MAPS[CFG.map].veh); // buzina/som próprio de cada veículo
   }
@@ -1440,6 +1440,7 @@ function resize() {
   HZ = H * .33; GY = H * .87; LW = Math.min(W * .3, 250); U = Math.min(H / 720, W / 420) * 1.22 * CAMZ; PU = U * .7;
 }
 addEventListener('resize', resize); resize();
+let _qT = 0; addEventListener('sr:qualitychange', () => { clearTimeout(_qT); _qT = setTimeout(resize, 400); }); // runtime.js reduz/devolve a resolução conforme o FPS real
 // Projeção: pista (-1,0,1) e distância z → posição na tela e escala s
 const P = (l, z) => { const s = 1 / (1 + Math.max(z, -200) / Z0); return { s, x: W / 2 + (l - cam) * LW * s, y: HZ + (GY - HZ + camH * U) * s }; };
 const hash = (n, b) => Math.abs((Math.sin(n * 127.1 + b * 311.7) * 43758.5453) % 1);
@@ -1714,7 +1715,30 @@ function trainSide(o, z) { // janelas e faixas na lateral do trem
   quad(zs, ze, 16, 27, '#ffd21f'); quad(zs, ze, 27, 32, '#e8453c');
   for (let w = o.wz + 40; w < o.wz + o.len - 70; w += 95) { const a = Math.max(w - dist, -200), b = w - dist + 55; if (b < -190 || a > ZMAX) continue; quad(a, b, 50, 92, '#1d2a44'); quad(a + 3, b - 3, 54, 88, '#bfe6ff'); }
 }
-function shade(hex, k) { const n = parseInt(hex.slice(1), 16); const c = v => Math.max(0, Math.min(255, Math.round(v * k))); return `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`; }
+// Sprite da moeda (cache): refeito só quando a cor ou a imagem personalizada mudam
+let _coinSpr = null, _coinSprKey = '';
+function coinSprite() {
+  const cc = CFG.coinColor || '#ffd23a', key = cc + '|' + (coinImage ? (coinImage.src || '').length : 0);
+  if (_coinSpr && _coinSprKey === key) return _coinSpr;
+  const S = 96, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d'), r = S / 2 - 2;
+  x.translate(S / 2, S / 2);
+  if (coinImage && coinImage.complete && coinImage.naturalWidth) { x.beginPath(); x.arc(0, 0, r, 0, Math.PI * 2); x.clip(); x.drawImage(coinImage, -r, -r, r * 2, r * 2); }
+  else {
+    const metal = x.createLinearGradient(-r, -r, r, r); metal.addColorStop(0, shade(cc, 1.28)); metal.addColorStop(.28, cc); metal.addColorStop(.58, shade(cc, .76)); metal.addColorStop(.82, shade(cc, 1.18)); metal.addColorStop(1, shade(cc, .68));
+    x.fillStyle = '#9b6723'; x.beginPath(); x.arc(0, 0, r, 0, Math.PI * 2); x.fill();
+    x.fillStyle = metal; x.beginPath(); x.arc(0, 0, r * .88, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = shade(cc, 1.42); x.lineWidth = 3; x.beginPath(); x.arc(0, 0, r * .72, 0, Math.PI * 2); x.stroke();
+    x.strokeStyle = 'rgba(255,255,220,.8)'; x.lineWidth = 2; x.beginPath(); x.arc(-r * .04, -r * .04, r * .56, Math.PI * 1.05, Math.PI * 1.82); x.stroke();
+    x.fillStyle = shade(cc, 1.42); x.font = `900 ${Math.round(r * .95)}px system-ui`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('S', 0, 2);
+  }
+  _coinSpr = c; _coinSprKey = key; return c;
+}
+const _shadeCache = new Map();
+function shade(hex, k) { // cache: evita refazer parse + string de cor milhares de vezes por quadro
+  const kq = Math.round(k * 48), key = hex + '|' + kq; let r = _shadeCache.get(key);
+  if (r === undefined) { if (_shadeCache.size > 6000) _shadeCache.clear(); const n = parseInt(hex.slice(1), 16), kk = kq / 48; const c = v => Math.max(0, Math.min(255, Math.round(v * kk))); r = `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`; _shadeCache.set(key, r); }
+  return r;
+}
 
 // 🧱 Minecraft: pinta "pixels" de textura na frente de um bloco (r = retorno do box())
 function mcFace(r, cols, rows, pal, seed) {
@@ -2221,18 +2245,10 @@ function drawWorld(now) {
     else if (o.t === 'barrier') { const nz = Math.max(z, NZ), r = box(o.l, nz, z + o.len, TOPS.barrier, '#8a4f3a', .84), fw = r.w * r.a.s, fh = r.ya - r.ta;
       g.fillStyle = 'rgba(40,15,5,.22)'; g.fillRect(r.a.x - fw / 2, r.ta + fh * .33, fw, fh * .12); g.fillRect(r.a.x - fw / 2, r.ta + fh * .68, fw, fh * .1); g.fillStyle = 'rgba(255,220,180,.25)'; g.fillRect(r.a.x - fw * .38, r.ta + fh * .5, fw * .3, fh * .1); }
     else if (o.t === 'bar') { const p = P(o.l, z), w = LW * .8 * p.s; g.fillStyle = '#6b4528'; g.fillRect(p.x - w / 2, p.y - 120 * U * p.s, 10 * U * p.s + 2, 120 * U * p.s); g.fillRect(p.x + w / 2 - 10 * U * p.s, p.y - 120 * U * p.s, 10 * U * p.s + 2, 120 * U * p.s); g.fillStyle = '#f2572b'; g.fillRect(p.x - w / 2, p.y - 105 * U * p.s, w, 32 * U * p.s); g.fillStyle = '#fff'; for (let q = 0; q < 4; q++) g.fillRect(p.x - w / 2 + w * (.08 + q * .24), p.y - 105 * U * p.s, w * .12, 32 * U * p.s); }
-    else if (o.t === 'coin') { // moeda circular com aro metálico e rotação lenta, sem o antigo bloco quadrado
-      g.save(); g.globalAlpha=1;
-      const p = P(o.l, z), r = Math.max(3, 23 * U * p.s), spin = Math.cos(now / 520 + o.wz * .003), sx = Math.max(.16, Math.abs(spin)), cy = p.y - (45 + (o.h || 0)) * U * p.s, cc = CFG.coinColor || '#ffd23a';
+    else if (o.t === 'coin') { // moeda circular: sprite pré-desenhado (1 drawImage por moeda em vez de ~15 operações)
+      const p = P(o.l, z), r = Math.max(3, 23 * U * p.s), spin = Math.cos(now / 520 + o.wz * .003), sx = Math.max(.16, Math.abs(spin)), cy = p.y - (45 + (o.h || 0)) * U * p.s, spr = coinSprite();
       g.fillStyle = 'rgba(15,20,35,.25)'; g.beginPath(); g.ellipse(p.x + 3 * U * p.s, p.y - 2 * U * p.s, r * .82, r * .24, 0, 0, Math.PI * 2); g.fill();
-      g.save(); g.translate(p.x, cy); g.scale(sx, 1);
-      const metal = g.createLinearGradient(-r, -r, r, r); metal.addColorStop(0, shade(cc, 1.28)); metal.addColorStop(.28, cc); metal.addColorStop(.58, shade(cc, .76)); metal.addColorStop(.82, shade(cc, 1.18)); metal.addColorStop(1, shade(cc, .68));
-      g.fillStyle = '#9b6723'; g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.fill();
-      g.fillStyle = metal; g.beginPath(); g.arc(0, 0, r * .88, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = shade(cc, 1.42); g.lineWidth = Math.max(1, 2 * p.s); g.beginPath(); g.arc(0, 0, r * .72, 0, Math.PI * 2); g.stroke();
-      g.strokeStyle = 'rgba(255,255,220,.8)'; g.lineWidth = Math.max(.8, 1.2 * p.s); g.beginPath(); g.arc(-r * .04, -r * .04, r * .56, Math.PI * 1.05, Math.PI * 1.82); g.stroke();
-      if (sx > .42) { g.fillStyle = shade(cc, 1.42); g.font = `900 ${Math.max(7, r * .95)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('S', 0, 1 * p.s); }
-      g.restore(); g.restore(); }
+      g.drawImage(spr, p.x - r * sx, cy - r, r * 2 * sx, r * 2); }
     g.globalAlpha = 1;
   }
   if (!playerDone) drawPlayer();
@@ -2749,12 +2765,13 @@ function drawDeath() {
   g.fillText(`PONTOS  ${over.score || 0}     •     MOEDAS  ${coins || 0}`, 0, 58*U);
   g.restore();
 }
-let fpsN = 0, fpsT = 0;
+let fpsN = 0, fpsT = 0, workT = 0;
 function loop(now) {
+  const _w0 = performance.now();
   { const hm = st === 'title' || st === 'over'; if (document.body.classList.contains('home') !== hm) document.body.classList.toggle('home', hm); } // HUD só fica oculto no menu; em jogo/pausa/edição volta tudo
   const real = now - last; last = now;
 
-  if (real > 0 && real < 1000) { fpsN++; fpsT += real; if (fpsT >= 500) { const fe = $('#fps'); if (fe && CFG.fps.show) fe.textContent = Math.round(fpsN * 1000 / fpsT) + ' FPS'; fpsN = 0; fpsT = 0; } }
+  if (real > 0 && real < 1000) { fpsN++; fpsT += real; if (fpsT >= 500) { const fe = $('#fps'); if (fe && CFG.fps.show) { const f = Math.round(fpsN * 1000 / fpsT), cap = Math.min(999, Math.round(1000 / Math.max(.5, workT / fpsN))); fe.textContent = f + ' FPS' + (cap >= f * 1.25 && f < cap - 8 ? ' (máx ~' + cap + ')' : ''); } fpsN = 0; fpsT = 0; workT = 0; } }
   if (st === 'play') update(Math.max(0, Math.min(.05, real / 1000)), Math.max(0, real));
   else if (st === 'dying') { // o mundo desacelera enquanto o personagem cai
     const dt = Math.max(0, Math.min(.05, real / 1000)); dieT += dt; dist += speed * dt * Math.max(0, 1 - dieT / .7); guard.age += dt;
@@ -2768,6 +2785,7 @@ function loop(now) {
   if (st === 'play' && guard.t > 0) { g.font = '900 ' + 20 * U + 'px Impact, sans-serif'; g.textAlign = 'center'; g.fillStyle = '#ff5468'; g.strokeStyle = '#14172e'; g.lineWidth = 4; const tx = '👮 GUARDA NA SUA COLA! ' + Math.ceil(guard.t) + 's'; g.strokeText(tx, W / 2, H * .2); g.fillText(tx, W / 2, H * .2); }
   if (st === 'play' && msgT > 0) { g.font = '900 ' + 22 * U + 'px Impact, sans-serif'; g.textAlign = 'center'; g.fillStyle = '#ffd21f'; g.strokeStyle = '#14172e'; g.lineWidth = 4; g.strokeText(msgTxt, W / 2, H * .28); g.fillText(msgTxt, W / 2, H * .28); }
   g.restore(); drawDeath();
+  workT += performance.now() - _w0;
   requestAnimationFrame(loop);
 }
 
