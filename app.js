@@ -393,7 +393,7 @@ let accDraft = null, accEdit = false, rankTab = 'me', lastNc = 0, lastNcNew = fa
 const myRank = () => ACC ? (CFG.ranks[ACC.uid] || (CFG.ranks[ACC.uid] = [])) : (Array.isArray(CFG.rank) ? CFG.rank : (CFG.rank = []));
 /* Avatares criados no painel admin (cache gravado pelo carregador: localStorage "rio_live_av") */
 const lsj = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') || d; } catch (e) { return d; } };
-const LC = { notice:'', maint:false, maintMsg:'', speed0:1000, speedMax:1800, gain:.02, priceMul:1, freeAll:false, rankOff:false, minWallet:0, coinMul:1 }
+const LC = { notice:'', maint:false, maintMsg:'', speed0:800, speedMax:1800, gain:.02, priceMul:1, freeAll:false, rankOff:false, minWallet:0, coinMul:1 }
 // Avisos e manutenção publicados no painel (live/status). Guardados pelo carregador em localStorage e atualizados a cada 60 s.
 function applyStatus(x) { x = x || {}; LC.notice = x.noticeOn ? String(x.notice || '') : ''; LC.noticeImg = x.noticeOn ? String(x.noticeImg || '') : ''; LC.maint = !!x.maint; LC.maintMsg = String(x.maintMsg || ''); }
 function noticeHTML() {
@@ -404,7 +404,7 @@ function noticeHTML() {
 }
 applyStatus(lsj('rio_live_status', {}));
 setInterval(async () => { try { const r = await fbApi('/api/status', 'GET'); if (!r || r.down || !r.data) return; localStorage.setItem('rio_live_status', JSON.stringify(r.data)); applyStatus(r.data); const el = document.getElementById('liveNotice'); if (el) el.innerHTML = noticeHTML(); } catch (_) {} }, 60000);
-for (const k of ['speed0', 'speedMax', 'gain', 'priceMul', 'minWallet', 'coinMul']) { LC[k] = +LC[k]; if (!isFinite(LC[k])) LC[k] = { speed0: 1000, speedMax: 1800, gain: .02, priceMul: 1, minWallet: 0, coinMul: 1 }[k]; }
+for (const k of ['speed0', 'speedMax', 'gain', 'priceMul', 'minWallet', 'coinMul']) { LC[k] = +LC[k]; if (!isFinite(LC[k])) LC[k] = { speed0: 800, speedMax: 1800, gain: .02, priceMul: 1, minWallet: 0, coinMul: 1 }[k]; }
 LC.speed0 = Math.min(3000, Math.max(200, LC.speed0)); LC.speedMax = Math.min(4000, Math.max(LC.speed0, LC.speedMax));
 if (LC.minWallet > (CFG.wallet || 0)) CFG.wallet = LC.minWallet;
 // Mantém as configurações remotas atualizadas sem exigir que cada jogador recarregue a página.
@@ -1009,7 +1009,7 @@ try { ['sr_ai_maps_v1'].forEach(k => localStorage.removeItem(k)); Object.keys(lo
 if (!(CFG.map >= 0 && CFG.map < MAPS.length)) CFG.map = 0;
 // Na Lua a gravidade é menor: pulos mais longos e flutuantes
 const AG = () => { const c = CHARS[CFG.char]; return c && c.agile > 1 ? Math.min(1.5, c.agile) : 1; }; // skins ágeis (campo agile do painel)
-const GRAV = () => 2900 / (1 + (AG() - 1) * .6), JV = () => 850 / Math.sqrt(1 + (AG() - 1) * .6); // UPDATE 10: pulo de ~125 (passa barreiras, não sobe em trem sem rampa) // Lua: mesma gravidade e pulo dos outros mapas
+const GRAV = () => 2900 / (1 + (AG() - 1) * .6), JV = () => 1141 / Math.sqrt(1 + (AG() - 1) * .6); // UPDATE 14: pulo de ~225 (+100 sobre os ~125 anteriores; altura = JV²/(2·GRAV), igual em qualquer personagem) // Lua: mesma gravidade e pulo dos outros mapas
 
 let dist, coins, objs, nextWz, pl, guard, board = { t: 0, cd: 0 }, trail = [], slideDust = [], speed, over = { title: '', score: 0 }, last = performance.now(), tAccum = 0, tFrozen = false, msgT = 0, msgTxt = '', tLast = 0, dieT = 0, dieTitle = '', cam = 0, camH = 0, camB = 0;
 const rnd = (a, b) => a + Math.random() * (b - a);
