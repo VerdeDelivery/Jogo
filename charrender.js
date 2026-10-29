@@ -73,9 +73,11 @@ function drawChar(c, x, y0, u, ch, o = {}) {
   const INK = '#14172e', sw = Math.sin(o.run || 0), yaw = o.yaw === undefined ? .5 : o.yaw, pit = -.3;
   const roll = !!o.roll, sliding = !!o.slide, sk = sliding ? (o.slideK === undefined ? 1 : o.slideK) : 0, phase = o.slidePhase || 0, ang = roll ? (.6 - (o.spin || 0)) * 10.5 : 0;
   const mx = (a, b) => a + (b - a) * sk, ph = Math.sin(phase); // mistura corrida → carrinho
-  const lg = roll ? [-1.5,-1.5] : sliding ? [mx(o.air ? -.55 : sw*1.02, .02 + ph*.05), mx(o.air ? .45 : -sw*1.02, -.45 + Math.sin(phase+1.3)*.07)] : o.air ? [-.55,.45] : [sw*1.02,-sw*1.02];
-  const ar = roll || o.air ? [-1.2,-1.2] : sliding ? [mx(-sw*.96, 2.05 + Math.sin(phase+.5)*.12), mx(sw*.96, 1.7 + Math.sin(phase+2)*.12)] : [-sw*.96,sw*.96];
-  const bob = roll || o.air ? 0 : Math.abs(sw)*3.2*(1-sk), parts = [];
+  let lg = roll ? [-1.5,-1.5] : sliding ? [mx(o.air ? -.55 : sw*1.02, .02 + ph*.05), mx(o.air ? .45 : -sw*1.02, -.45 + Math.sin(phase+1.3)*.07)] : o.air ? [-.55,.45] : [sw*1.02,-sw*1.02];
+  let ar = roll || o.air ? [-1.2,-1.2] : sliding ? [mx(-sw*.96, 2.05 + Math.sin(phase+.5)*.12), mx(sw*.96, 1.7 + Math.sin(phase+2)*.12)] : [-sw*.96,sw*.96];
+  if (o.lg) lg = o.lg; if (o.ar) ar = o.ar; const leanA = o.lean || 0;
+  const L = p => { if (!leanA) return p; const k = Math.max(0, Math.min(1, (p[1] - 34) / 30)) * leanA, q = rot3([p[0], p[1] - 34, p[2]], k, 0, 0); return [q[0], q[1] + 34, q[2]]; }; // inclina o tronco (quadril fixo)
+  const bob = (roll || o.air ? 0 : Math.abs(sw)*3.2*(1-sk)) + (o.bobAdd || 0), parts = [];
   // B(centro x,y,z, largura,altura,profundidade, cor, pivô, giro): monta o modelo em "caixas"
   const B = (cx, cy, cz, w, h, d, col, pv, rx, nb) => { const dy = nb ? 0 : bob; parts.push({ c: [cx, cy + dy, cz], s: [w, h, d], col, pv: pv ? [pv[0], pv[1] + dy, pv[2]] : null, rx: rx || 0 }); };
   const skin = ch.skin, sh = ch.shoe || '#ffffff', sl = ch.sleeve || ch.hood, hand = ch.hand || skin;
@@ -169,6 +171,24 @@ function drawChar(c, x, y0, u, ch, o = {}) {
     B(0, 93.5, 12.4, 19, 8, 2.4, '#1f1612'); B(0, 96.6, 12.7, 10, 2, 1.4, '#1f1612'); B(-12.2, 95, 5, 1.4, 10, 14, '#1f1612'); B(12.2, 95, 5, 1.4, 10, 14, '#1f1612');
     B(-5, 101.5, 12.3, 3, 2.2, 1, '#14151a'); B(5, 101.5, 12.3, 3, 2.2, 1, '#14151a'); B(0, 91.4, 12.6, 6, 1, 1, '#f3e4dc'); B(12.8, 97, 1, 1.8, 3.4, 3.4, '#e8ecf5');
   }
+
+  // ---- ROSTO (UPDATE 10): todo personagem ganha rosto automaticamente, inclusive skins novas. ----
+  // Personalize em qualquer skin com ch.face = { eye, eyeY, eyeGap } ou desligue com ch.noFace = true.
+  if (!ch.noFace && !ch.neto && ch.acc !== 'dona' && ch.acc !== 'helmet') {
+    const fc = ch.face || {}, ez = 12.45, ey = fc.eyeY || 100.2, ex = fc.eyeGap || 5.2, ink = fc.eye || '#14172e', emo = o.emote || 'smile', bl = !!o.blink, lk = o.look || 0, brow = shade(ch.hairCol || '#3a2616', 1), wow = emo === 'wow';
+    [-1, 1].forEach(s => {
+      const closed = bl || emo === 'happy' || (emo === 'wink' && s === 1);
+      if (closed) { B(s * ex, ey - .4, ez, 5, 1.2, 1, ink); if (emo === 'happy') B(s * ex, ey + .8, ez, 3.4, 1, 1, ink); }
+      else { B(s * ex, ey, ez, 5.2, wow ? 7.4 : 5.8, 1, '#ffffff'); B(s * ex + lk, ey - .3, ez + .5, 2.8, wow ? 3.4 : 3.8, 1, ink); B(s * ex + lk + .7, ey + .8, ez + 1, 1, 1, .5, '#ffffff'); }
+      B(s * ex, ey + (wow ? 6.4 : 4.8) + (emo === 'wink' && s === 1 ? -1 : 0), ez, 5.6, 1.3, 1, brow);
+      B(s * 8.4, ey - 3.2, ez, 3.2, 1.8, 1, '#f08a86'); // bochecha
+    });
+    B(0, ey - 3.8, ez + .4, 2.4, 2.8, 1.4, shade(skin, .86)); // nariz
+    const my = ey - 8.4, mc = '#7a2a2e';
+    if (emo === 'open' || emo === 'happy') { B(0, my, ez, 6.4, 4, 1, '#5a1418'); B(0, my + 1.4, ez + .3, 5.2, 1.2, 1, '#ffffff'); B(0, my - 1.2, ez + .3, 3.6, 1.6, 1, '#ff7a8a'); }
+    else if (wow) B(0, my - .4, ez, 3.6, 4.6, 1, '#5a1418');
+    else { B(0, my, ez, 6.4, 1.3, 1, mc); B(-3.6, my + .9, ez, 1.4, 1.4, 1, mc); B(3.6, my + .9, ez, 1.4, 1.4, 1, mc); if (emo === 'tongue') B(1.2, my - 1.9, ez + .4, 3.2, 3.4, 1, '#ff6f86'); }
+  }
   const a = ch.acc, cp = ch.cap;
   if (a === 'cap' || a === 'visor') {
     const backCap = ch.capDir === 'back', brimZ = backCap ? -16 : 16, badgeZ = backCap ? 13.7 : -13.7;
@@ -222,7 +242,7 @@ function drawChar(c, x, y0, u, ch, o = {}) {
   if (ch.flag === 'uk') { B(0, 62, -10.8, 15, 12, 2, '#263b80'); B(0, 62, -12, 3, 12, 2, '#f7f7fb'); B(0, 62, -13, 15, 3, 2, '#e34b58'); }
   const cen = [0, 50, 0], faces = [];
   const SA = -1.0 * sk; // carrinho: corpo inclina para trás, quadril desce e as pernas vão à frente
-  const G = p => { if (roll) { const q = rot3([p[0] - cen[0], p[1] - cen[1], p[2] - cen[2]], ang, 0, 0); p = [q[0] + cen[0], q[1] + cen[1], q[2] + cen[2]]; } if (sk) { const q = rot3([p[0], p[1] - 40, p[2]], SA, 0, 0); p = [q[0], q[1] + 40 - 22 * sk, q[2]]; } return rot3(rot3(p, 0, yaw, 0), pit, 0, 0); };
+  const G = p0 => { let p = L(p0); if (roll) { const q = rot3([p[0] - cen[0], p[1] - cen[1], p[2] - cen[2]], ang, 0, 0); p = [q[0] + cen[0], q[1] + cen[1], q[2] + cen[2]]; } if (sk) { const q = rot3([p[0], p[1] - 40, p[2]], SA, 0, 0); p = [q[0], q[1] + 40 - 22 * sk, q[2]]; } return rot3(rot3(p, 0, yaw, 0), pit, 0, 0); };
   const GN = n => { if (roll) n = rot3(n, ang, 0, 0); if (sk) n = rot3(n, SA, 0, 0); return rot3(rot3(n, 0, yaw, 0), pit, 0, 0); };
   for (const pt of parts) for (const f of FACES3) {
     let n = f.n; if (pt.pv) n = rot3(n, pt.rx, 0, 0);
