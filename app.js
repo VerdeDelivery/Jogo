@@ -1009,7 +1009,7 @@ try { ['sr_ai_maps_v1'].forEach(k => localStorage.removeItem(k)); Object.keys(lo
 if (!(CFG.map >= 0 && CFG.map < MAPS.length)) CFG.map = 0;
 // Na Lua a gravidade é menor: pulos mais longos e flutuantes
 const AG = () => { const c = CHARS[CFG.char]; return c && c.agile > 1 ? Math.min(1.5, c.agile) : 1; }; // skins ágeis (campo agile do painel)
-const GRAV = () => 2900 / (1 + (AG() - 1) * .6), JV = () => 891 / Math.sqrt(1 + (AG() - 1) * .6); // UPDATE 14: pulo de ~137 (altura = JV²/(2·GRAV), igual em qualquer personagem; número da altura 125→851, 137→891, 150→933) // Lua: mesma gravidade e pulo dos outros mapas
+const GRAV = () => 2900 / (1 + (AG() - 1) * .6), JV = () => 1077 / Math.sqrt(1 + (AG() - 1) * .6); // UPDATE 14: pulo de ~200 — passa por cima da fileira de 3 moedas (altura = JV²/(2·GRAV), igual em qualquer personagem; número da altura 125→851, 137→891, 166→981, 200→1077, 225→1142) // Lua: mesma gravidade e pulo dos outros mapas
 
 let dist, coins, objs, nextWz, pl, guard, board = { t: 0, cd: 0 }, trail = [], slideDust = [], speed, over = { title: '', score: 0 }, last = performance.now(), tAccum = 0, tFrozen = false, msgT = 0, msgTxt = '', tLast = 0, dieT = 0, dieTitle = '', cam = 0, camH = 0, camB = 0;
 const rnd = (a, b) => a + Math.random() * (b - a);
