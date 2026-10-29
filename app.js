@@ -1009,7 +1009,11 @@ try { ['sr_ai_maps_v1'].forEach(k => localStorage.removeItem(k)); Object.keys(lo
 if (!(CFG.map >= 0 && CFG.map < MAPS.length)) CFG.map = 0;
 // Na Lua a gravidade é menor: pulos mais longos e flutuantes
 const AG = () => { const c = CHARS[CFG.char]; return c && c.agile > 1 ? Math.min(1.5, c.agile) : 1; }; // skins ágeis (campo agile do painel)
-const GRAV = () => 2900 / (1 + (AG() - 1) * .6), JV = () => 1077 / Math.sqrt(1 + (AG() - 1) * .6); // UPDATE 14: pulo de ~200 — passa por cima da fileira de 3 moedas (altura = JV²/(2·GRAV), igual em qualquer personagem; número da altura 125→851, 137→891, 166→981, 200→1077, 225→1142) // Lua: mesma gravidade e pulo dos outros mapas
+const GRAV = () => 2900 / (1 + (AG() - 1) * .6), JV = () => Math.sqrt(2 * 2900 * jumpH()) / Math.sqrt(1 + (AG() - 1) * .6);
+// ⬆️ ALTURA DO PULO — mude os números aqui: começa em JUMP_H0 e chega em JUMP_H1 quando a dificuldade chega ao máximo (os 45 s de corrida, DIFF_SECS).
+// JUMP_SOFT = true → vai diminuindo aos poucos; false → fica em JUMP_H0 e troca de uma vez para JUMP_H1 aos 45 s.
+const JUMP_H0 = 200, JUMP_H1 = 125, JUMP_SOFT = true;
+const jumpH = () => { const p = Math.min(1, dd() / (diffCapDist || 51000)); return JUMP_SOFT ? JUMP_H0 + (JUMP_H1 - JUMP_H0) * p : (p >= 1 ? JUMP_H1 : JUMP_H0); };
 
 let dist, coins, objs, nextWz, pl, guard, board = { t: 0, cd: 0 }, trail = [], slideDust = [], speed, over = { title: '', score: 0 }, last = performance.now(), tAccum = 0, tFrozen = false, msgT = 0, msgTxt = '', tLast = 0, dieT = 0, dieTitle = '', cam = 0, camH = 0, camB = 0;
 const rnd = (a, b) => a + Math.random() * (b - a);
