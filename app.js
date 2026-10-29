@@ -393,7 +393,7 @@ let accDraft = null, accEdit = false, rankTab = 'me', lastNc = 0, lastNcNew = fa
 const myRank = () => ACC ? (CFG.ranks[ACC.uid] || (CFG.ranks[ACC.uid] = [])) : (Array.isArray(CFG.rank) ? CFG.rank : (CFG.rank = []));
 /* Avatares criados no painel admin (cache gravado pelo carregador: localStorage "rio_live_av") */
 const lsj = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || 'null') || d; } catch (e) { return d; } };
-const LC = { notice:'', maint:false, maintMsg:'', speed0:700, speedMax:1800, gain:.02, priceMul:1, freeAll:false, rankOff:false, minWallet:0, coinMul:1 }
+const LC = { notice:'', maint:false, maintMsg:'', speed0:800, speedMax:1800, gain:.02, priceMul:1, freeAll:false, rankOff:false, minWallet:0, coinMul:1 }
 // Avisos e manutenção publicados no painel (live/status). Guardados pelo carregador em localStorage e atualizados a cada 60 s.
 function applyStatus(x) { x = x || {}; LC.notice = x.noticeOn ? String(x.notice || '') : ''; LC.noticeImg = x.noticeOn ? String(x.noticeImg || '') : ''; LC.maint = !!x.maint; LC.maintMsg = String(x.maintMsg || ''); }
 function noticeHTML() {
@@ -404,7 +404,7 @@ function noticeHTML() {
 }
 applyStatus(lsj('rio_live_status', {}));
 setInterval(async () => { try { const r = await fbApi('/api/status', 'GET'); if (!r || r.down || !r.data) return; localStorage.setItem('rio_live_status', JSON.stringify(r.data)); applyStatus(r.data); const el = document.getElementById('liveNotice'); if (el) el.innerHTML = noticeHTML(); } catch (_) {} }, 60000);
-for (const k of ['speed0', 'speedMax', 'gain', 'priceMul', 'minWallet', 'coinMul']) { LC[k] = +LC[k]; if (!isFinite(LC[k])) LC[k] = { speed0: 700, speedMax: 1800, gain: .02, priceMul: 1, minWallet: 0, coinMul: 1 }[k]; }
+for (const k of ['speed0', 'speedMax', 'gain', 'priceMul', 'minWallet', 'coinMul']) { LC[k] = +LC[k]; if (!isFinite(LC[k])) LC[k] = { speed0: 800, speedMax: 1800, gain: .02, priceMul: 1, minWallet: 0, coinMul: 1 }[k]; }
 LC.speed0 = Math.min(3000, Math.max(200, LC.speed0)); LC.speedMax = Math.min(4000, Math.max(LC.speed0, LC.speedMax));
 if (LC.minWallet > (CFG.wallet || 0)) CFG.wallet = LC.minWallet;
 // Mantém as configurações remotas atualizadas sem exigir que cada jogador recarregue a página.
