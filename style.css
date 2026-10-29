@@ -444,3 +444,12 @@ body.home .hud,body.home #timer,body.home #fps,body.home #tvWrap,body.home #keys
 .hTile:nth-child(5){background:linear-gradient(180deg,#8fe0a8,#32b36a)}
 .hRight{gap:7px}.hTile{height:66px}
 #ov .home .hProfile canvas.hGuest{position:static;width:52px;height:52px;flex:none;border:3px solid #fff;border-radius:50%;margin:0;inset:auto}
+
+/* Atualização 11: nitidez e recuperação de desempenho em aparelhos lentos */
+canvas { image-rendering: auto; -webkit-transform: translateZ(0); }
+html[data-performance="economy"] .tvFloat,
+html[data-performance="economy"] .thr,
+html[data-performance="economy"] .bootVideo { animation-play-state: paused !important; }
+html[data-performance="economy"] .tvFloat { filter: none !important; }
+html[data-performance="balanced"] .tvFloat { filter: none; }
+.sr-client-badges { display:inline-flex; align-items:center; gap:3px; font-size:.82em; vertical-align:middle; opacity:.96; white-space:nowrap; }
