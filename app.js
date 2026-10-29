@@ -147,9 +147,8 @@ let st = 'title', prev = 'title', listening = null, backTo = 'title';
 const card = $('#card'), ov = $('#ov');
 function screen(name) {
   st = name === 'settings' ? 'settings' : name; ov.dataset.screen = name; ov.classList.remove('off');
-  if (name === 'title' || name === 'over') card.innerHTML = `${name === 'over' ? `<div class="overBox"><b>${over.title}</b><span>Pontos <b>${over.score}</b> · Moedas <b>${coins}</b> · Tempo <b>${fmtT(timerVal())}</b></span>${lastNc >= 1 ? `<span>⏱️ Maior tempo sem moeda: <b>${fmtT(lastNc)}</b>${lastNcNew ? ' · 🏆 novo recorde!' : ''}</span>` : ''}</div>` : ''}${ACC ? `<div class="accChip" id="bAcc" role="button" tabindex="0" style="${bnStyle(ACC.banner)}">${avatarHTML(ACC, 30)}<span>${esc(ACC.name)}${vBadge(VER[ACC.uid])}</span> ✎</div>${ACC.online ? '' : '<div class="notice" id="bRelog" role="button" tabindex="0" style="cursor:pointer">🔐 Conta não conectada ao servidor. Toque aqui para entrar e poder votar, jogar online e aparecer no ranking.</div>'}` : '<div class="accChip" id="bAcc0" role="button" tabindex="0">👤 Entrar ou criar conta</div>'}${name === 'title' ? `<div id="liveNotice">${noticeHTML()}</div>` : ''}<p class="eyebrow">CORRIDA URBANA · RIO DE JANEIRO</p><h1>SUBWAY RUN</h1><p class="hero-copy">Uma cidade inteira à sua frente.</p><canvas id="pv" width="110" height="120" aria-label="Prévia animada do personagem"></canvas><p><b>${CHARS[CFG.char].n}</b> · 🪙 ${CFG.inf ? '∞' : CFG.wallet} · Recorde ${CFG.best}</p><div class="pick mapPick"><button class="btn s" type="button" data-p="map" data-d="-1" aria-label="Mapa anterior">‹</button><span>${MAPS[CFG.map].n}</span><button class="btn s" type="button" data-p="map" data-d="1" aria-label="Próximo mapa">›</button></div><button class="btn" id="bPlay">CORRER</button>${ACC ? '' : '<button class="btn b" id="bLoginT" type="button">ENTRAR / CRIAR CONTA</button>'}<div class="menu-grid"><button class="btn g" id="bShop">PERSONAGENS</button><button class="btn g" id="bRank">RECORDES</button><button class="btn g" id="bMulti" type="button">MULTIJOGADOR</button><button class="btn g" id="bAIMaps" type="button">🤖 CRIAR MAPAS COM IA</button><button class="btn g" id="bCfg">AJUSTES</button><button class="btn g" id="bMus" type="button">MÚSICA</button><button class="btn g" id="bLive" type="button">📺 LIVES</button><button class="btn g" id="bPart" type="button">🤝 PARCEIROS</button><button class="btn g" id="bDonate" type="button">💛 ARRECADAÇÕES</button><button class="btn g" id="bPoll" type="button">📊 ENQUETE</button><button class="btn g" id="bFs" type="button">TELA CHEIA</button></div>`;
+  if (name === 'title' || name === 'over') card.innerHTML = `${name === 'over' ? `<div class="overBox"><b>${over.title}</b><span>Pontos <b>${over.score}</b> · Moedas <b>${coins}</b> · Tempo <b>${fmtT(timerVal())}</b></span>${lastNc >= 1 ? `<span>⏱️ Maior tempo sem moeda: <b>${fmtT(lastNc)}</b>${lastNcNew ? ' · 🏆 novo recorde!' : ''}</span>` : ''}</div>` : ''}${ACC ? `<div class="accChip" id="bAcc" role="button" tabindex="0" style="${bnStyle(ACC.banner)}">${avatarHTML(ACC, 30)}<span>${esc(ACC.name)}${vBadge(VER[ACC.uid])}</span> ✎</div>${ACC.online ? '' : '<div class="notice" id="bRelog" role="button" tabindex="0" style="cursor:pointer">🔐 Conta não conectada ao servidor. Toque aqui para entrar e poder votar, jogar online e aparecer no ranking.</div>'}` : '<div class="accChip" id="bAcc0" role="button" tabindex="0">👤 Entrar ou criar conta</div>'}${name === 'title' ? `<div id="liveNotice">${noticeHTML()}</div>` : ''}<p class="eyebrow">CORRIDA URBANA · RIO DE JANEIRO</p><h1>SUBWAY RUN</h1><p class="hero-copy">Uma cidade inteira à sua frente.</p><canvas id="pv" width="110" height="120" aria-label="Prévia animada do personagem"></canvas><p><b>${CHARS[CFG.char].n}</b> · 🪙 ${CFG.inf ? '∞' : CFG.wallet} · Recorde ${CFG.best}</p><div class="pick mapPick"><button class="btn s" type="button" data-p="map" data-d="-1" aria-label="Mapa anterior">‹</button><span>${MAPS[CFG.map].n}</span><button class="btn s" type="button" data-p="map" data-d="1" aria-label="Próximo mapa">›</button></div><button class="btn" id="bPlay">CORRER</button>${ACC ? '' : '<button class="btn b" id="bLoginT" type="button">ENTRAR / CRIAR CONTA</button>'}<div class="menu-grid"><button class="btn g" id="bShop">PERSONAGENS</button><button class="btn g" id="bRank">RECORDES</button><button class="btn g" id="bMulti" type="button">MULTIJOGADOR</button><button class="btn g" id="bCfg">AJUSTES</button><button class="btn g" id="bMus" type="button">MÚSICA</button><button class="btn g" id="bLive" type="button">📺 LIVES</button><button class="btn g" id="bPart" type="button">🤝 PARCEIROS</button><button class="btn g" id="bDonate" type="button">💛 ARRECADAÇÕES</button><button class="btn g" id="bPoll" type="button">📊 ENQUETE</button><button class="btn g" id="bFs" type="button">TELA CHEIA</button></div>`;
   if (name === 'pause') card.innerHTML = `<h1>PAUSADO</h1><button class="btn" id="bPlay">CONTINUAR</button><button class="btn g" id="bMus" type="button">🎵 MÚSICAS</button><button class="btn g" id="bNew">Reiniciar</button><button class="btn g" id="bShop">SKINS E LOJA</button><button class="btn b" id="bCfg">CONFIGURAÇÕES</button>`;
-  if (name === 'ai-maps') drawAIMaps();
   if (name === 'settings') drawSettings();
   if (name === 'shop') { shopSel = null; drawShop(); }
   if (name === 'rank') drawRank();
@@ -163,7 +162,7 @@ function screen(name) {
   const q = id => card.querySelector(id);
   if (name === 'title' || name === 'over') applyNewBadges();
   if (q('#bFs')) q('#bFs').onclick = () => (isFS() ? outFS() : goFS());
-  if (q('#bAIMaps')) q('#bAIMaps').onclick = () => { backTo = name; screen('ai-maps'); }; if (q('#bShop')) q('#bShop').onclick = () => { backTo = name; screen('shop'); }; if (q('#bRank')) q('#bRank').onclick = () => { backTo = name; screen('rank'); }; if (q('#bMulti')) q('#bMulti').onclick = () => { backTo = name; screen('multiplayer'); }; if (q('#bLive')) q('#bLive').onclick = () => { backTo = name; screen('lives'); }; if (q('#bPart')) q('#bPart').onclick = () => { backTo = name; screen('partners'); }; if (q('#bDonate')) q('#bDonate').onclick = () => { backTo = name; screen('donate'); showDonations(); }; if (q('#bMus')) q('#bMus').onclick = () => { backTo = name; screen('music'); }; if (q('#bPoll')) q('#bPoll').onclick = () => { backTo = name; screen('poll'); };
+  if (q('#bShop')) q('#bShop').onclick = () => { backTo = name; screen('shop'); }; if (q('#bRank')) q('#bRank').onclick = () => { backTo = name; screen('rank'); }; if (q('#bMulti')) q('#bMulti').onclick = () => { backTo = name; screen('multiplayer'); }; if (q('#bLive')) q('#bLive').onclick = () => { backTo = name; screen('lives'); }; if (q('#bPart')) q('#bPart').onclick = () => { backTo = name; screen('partners'); }; if (q('#bDonate')) q('#bDonate').onclick = () => { backTo = name; screen('donate'); showDonations(); }; if (q('#bMus')) q('#bMus').onclick = () => { backTo = name; screen('music'); }; if (q('#bPoll')) q('#bPoll').onclick = () => { backTo = name; screen('poll'); };
   if (q('#bLoginT')) q('#bLoginT').onclick = () => { accDraft = null; accEdit = false; screen(Object.keys(ACCTS).length ? 'login' : 'account'); };
   if (q('#bAcc0')) q('#bAcc0').onclick = () => { accEdit = false; accDraft = null; screen(Object.keys(ACCTS).length ? 'login' : 'account'); };
   if (q('#bRelog')) q('#bRelog').onclick = () => { loginName = ACC ? ACC.name : ''; accDraft = null; accEdit = false; screen('login'); };
@@ -176,121 +175,6 @@ function screen(name) {
   if (q('#bCfg')) q('#bCfg').onclick = () => { prev = name; screen('settings'); };
   if (name === 'title' || name === 'over') q('#bPlay').onclick = startGame;
   $('#pauseBtn').style.visibility = 'hidden';
-}
-
-function drawAIMaps(){
-  const uid=String(ACC&&ACC.uid||'guest');
-  const creditKey='sr_ai_studio_credits_'+uid, dayKey='sr_ai_studio_day_'+uid;
-  function resetStamp(){const d=new Date();if(d.getHours()<5)d.setDate(d.getDate()-1);d.setHours(5,0,0,0);return d.toISOString().slice(0,10)}
-  const stamp=resetStamp();
-  try{if(localStorage.getItem(dayKey)!==stamp){localStorage.setItem(dayKey,stamp);localStorage.setItem(creditKey,'200')}}catch(_){}
-  let credits=200;try{const n=Number(localStorage.getItem(creditKey));credits=Number.isFinite(n)?n:200}catch(_){}
-  let currentMap=null, attachments=[], chat=[];
-  card.innerHTML=`<header class="studio-head"><div class="studio-badge" aria-hidden="true">🤖</div><div><div class="studio-eyebrow">SUBWAY RUN · ESTÚDIO</div><h1>Criar mapas</h1></div></header>
-  <p class="studio-sub">Descreva a ideia e a IA inventa tudo: modelos, texturas, cenário e layout. Ou monte você mesmo no Editor. Joga no motor de verdade.</p>
-  <div class="studio-credit"><div><span>🪙 <b id="aiMapCredits">${Math.max(0,credits)}</b><small> / 200 créditos hoje</small></span><small>renova às 05:00</small></div><div class="studio-meter"><i id="aiMeter" style="width:${Math.round(Math.max(0,credits)/2)}%"></i></div></div>
-  <nav class="ai-studio-tabs" role="tablist"><button type="button" class="active" data-tab="chat">💬 Chat</button><button type="button" data-tab="preview">🎮 Prévia</button><button type="button" data-tab="editor">🛠️ Editor</button><button type="button" data-tab="files">📎 Arquivos</button><button type="button" data-tab="mine">🗺️ Meus mapas</button></nav>
-  <section class="ai-studio-panel" data-panel="chat"><div class="ai-chat-log" id="aiChatLog"><div class="ai-chat-welcome"><b>O que vamos criar hoje?</b><p>Conte o tema e o clima. A IA desenha os obstáculos, as texturas e o cenário. Depois é só pedir ajustes.</p></div></div>
-  <div class="idea-chips" aria-label="Ideias rápidas"><button type="button" data-idea="Um vulcão com rochas de basalto, poças de lava, arcos de pedra e colunas de lava ao lado. Começa fácil e termina cheio de obstáculos.">🌋 Vulcão</button><button type="button" data-idea="Um mundo de doces: pirulitos gigantes, barras de chocolate como muros, bolos e algodão doce no cenário, cores bem vivas.">🍬 Doces</button><button type="button" data-idea="Estação espacial com cápsulas, antenas e cristais, céu cheio de estrelas com um planeta, tudo com textura metálica.">🚀 Espaço</button><button type="button" data-idea="Castelo medieval com muralhas de pedra, portões de madeira para passar por baixo, tochas e torres ao lado.">🏰 Medieval</button><button type="button" data-idea="Fundo do mar com corais coloridos, caixas de tesouro, algas e bolhas, tudo em tons de azul e verde.">🌊 Oceano</button><button type="button" data-idea="Cemitério assombrado à noite com lápides, portões de ferro, árvores secas e neblina roxa.">👻 Assombrado</button></div>
-  <div class="composer"><textarea id="aiMapPrompt" rows="4" maxlength="1600" placeholder="Ex.: Ilha vulcânica no fim da tarde, céu laranja, palmeiras, começa fácil e termina com muitos trens e barras…"></textarea><div class="composer-bar"><span class="composer-count" id="aiCount">0 / 1600</span><button class="btn gen" id="aiMapGenerate">✨ Gerar mapa <small>25 créditos</small></button></div></div>
-  <p class="studio-hint">A IA cria o visual e o layout, mas pulo, gravidade e velocidade são iguais para todos. Pedidos de voo ou bugs são ignorados. Mapas de jogadores não dão moedas da carteira nem entram nos rankings.</p></section>
-  <section class="ai-studio-panel" data-panel="preview" hidden><div id="aiPreviewEmpty" class="ai-preview-empty"><div class="ai-thinking-orb">✦</div><h3>Sua criação aparece aqui</h3><p>Gere um mapa no Chat ou monte um no Editor.</p></div><div id="aiPreviewWorking" class="ai-preview-empty" hidden><div class="ai-thinking-orb spinning">✦</div><h3>A IA está criando…</h3><p>Desenhando modelos, texturas e layout. Pode levar alguns segundos.</p><div class="ai-progress"><span></span></div></div><div id="aiPreviewReady" hidden><div id="aiMapResult" class="ai-map-result"></div></div></section>
-  <section class="ai-studio-panel" data-panel="files" hidden><h3>📎 Arquivos de referência</h3><p class="studio-hint">Envie arquivos de texto (HTML, CSS, JS, JSON, OBJ, MTL, TXT) para a IA usar só como inspiração de estilo. Nada é executado. Imagens aparecem só como lembrete nesta sessão.</p><input id="aiMapFiles" type="file" multiple accept="image/png,image/jpeg,image/webp,.html,.htm,.css,.js,.json,.obj,.mtl,.txt"><div id="aiFileList" class="ai-file-list"><p>Nenhum arquivo anexado.</p></div><p class="studio-hint">Não envie senhas, chaves de API nem dados pessoais.</p></section>
-  <section class="ai-studio-panel" data-panel="editor" hidden><div id="edBox"></div></section>
-  <section class="ai-studio-panel" data-panel="mine" hidden><h3>🗺️ Meus mapas</h3><div id="aiMineList" class="ai-file-list"></div><label class="studio-field">Importar mapa de um amigo<input id="aiImportCode" type="text" maxlength="80000" placeholder="Cole o código SRMAP1:…"></label><button type="button" class="btn g" id="aiImportBtn">Importar mapa</button><p class="studio-hint">Até ${AIMAP_MAX} mapas neste aparelho. Mapas importados passam pela mesma validação.</p></section>
-  <div id="aiMapStatus" class="studio-status" role="status">${ACC&&ACC.online?'':'Para gerar com a IA, entre numa conta. O Editor funciona sem conta.'}</div>
-  <button class="btn g" id="aiMapBack">Voltar ao menu</button>`;
-  const panels=[...card.querySelectorAll('[data-panel]')],tabs=[...card.querySelectorAll('[data-tab]')];
-  function setTab(t){tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));panels.forEach(p=>p.hidden=p.dataset.panel!==t);if(t==='editor')edSync()}
-  tabs.forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
-  $('#aiMapBack').onclick=()=>screen(backTo);
-  const status=$('#aiMapStatus'),promptEl=$('#aiMapPrompt'),chatLog=$('#aiChatLog');
-  const cnt=()=>{$('#aiCount').textContent=promptEl.value.length+' / 1600'};promptEl.addEventListener('input',cnt);
-  card.querySelectorAll('[data-idea]').forEach(b=>b.onclick=()=>{promptEl.value=b.dataset.idea;cnt();promptEl.focus()});
-  function renderChat(){chatLog.innerHTML=chat.length?chat.map(m=>`<div class="ai-chat-message ${m.role==='assistant'?'assistant':'user'}"><b>${m.role==='assistant'?'IA Subway Run':'Você'}</b><p>${esc(m.content)}</p></div>`).join(''):'<div class="ai-chat-welcome"><b>Vamos criar seu mapa.</b><p>Descreva a primeira versão e depois peça ajustes pelo chat.</p></div>';chatLog.scrollTop=chatLog.scrollHeight}
-  function renderFiles(){const box=$('#aiFileList');box.innerHTML=attachments.length?attachments.map((a,i)=>`<div class="ai-file-row"><span>${a.kind==='image'?'🖼️':'📄'} ${esc(a.name)} <small>${Math.round(a.size/1024)} KB</small></span><button type="button" class="btn g" data-remove-file="${i}">Remover</button>${a.kind==='image'&&a.url?`<img src="${a.url}" alt="Prévia de ${esc(a.name)}">`:''}</div>`).join(''):'<p>Nenhum arquivo anexado.</p>';box.querySelectorAll('[data-remove-file]').forEach(b=>b.onclick=()=>{const a=attachments.splice(Number(b.dataset.removeFile),1)[0];if(a&&a.url)URL.revokeObjectURL(a.url);renderFiles()})}
-  $('#aiMapFiles').onchange=async e=>{for(const f of [...(e.target.files||[])].slice(0,8)){if(f.size>2*1024*1024){status.textContent=`${f.name} ultrapassa 2 MB e foi ignorado.`;continue}const imageFile=f.type.startsWith('image/');let content='';if(!imageFile){try{content=(await f.text()).slice(0,12000)}catch(_){content='[Não foi possível ler o arquivo como texto]'}}attachments.push({name:f.name,size:f.size,type:f.type,kind:imageFile?'image':'text',content,url:imageFile?URL.createObjectURL(f):''})}renderFiles();e.target.value=''};
-  // ===== Galeria "Criado pela IA": modelos, cenários e texturas =====
-  const KIND_N={jump:'pular',slide:'deslizar',block:'muro',long:'trem',veh:'veículo'};
-  function texCanvas(t){const k=document.createElement('canvas');k.width=t.w;k.height=t.h;const kc=k.getContext('2d');t.rows.forEach((r,y)=>{for(let i=0;i<t.w;i++){const ch=r[i];if(ch!=='.'&&t.pal[+ch]!==undefined){kc.fillStyle=t.pal[+ch];kc.fillRect(i,y,1,1)}}});return k}
-  function paintThumb(cv,parts,texs,range){const c=cv.getContext('2d'),W=cv.width,H=cv.height;c.clearRect(0,0,W,H);c.fillStyle='#0b1028';c.fillRect(0,0,W,H);const maxH=Math.max(60,...parts.map(p=>p.h1)),sx=W/(range*2),sy=(H-10)/maxH;c.fillStyle='#232a55';c.fillRect(0,H-8,W,8);
-    parts.slice().sort((a,b)=>(b.dz-a.dz)||(a.h0-b.h0)).forEach(p=>{const x=W/2+(p.dx-p.w/2)*sx,w=Math.max(1,p.w*sx),y=H-8-p.h1*sy,h=Math.max(1,(p.h1-p.h0)*sy);c.fillStyle=p.c;c.fillRect(x,y,w,h);const t=p.t&&texs[+p.t[1]-1];if(t){const pat=c.createPattern(texCanvas(t),'repeat');try{pat.setTransform(new DOMMatrix().translate(x,y).scale(w/t.w,h/t.h))}catch(_){}c.imageSmoothingEnabled=false;c.fillStyle=pat;c.fillRect(x,y,w,h)}c.strokeStyle='rgba(0,0,0,.35)';c.strokeRect(x+.5,y+.5,w-1,h-1)})}
-  function galleryHTML(m){const T=m.textures||[],Mo=m.models||[],S=m.scen||[];if(!T.length&&!Mo.length&&!S.length)return'';
-    const fig=(cv,cap,sm)=>`<figure>${cv}<figcaption>${cap}<small>${sm}</small></figcaption></figure>`;
-    return `<div class="gal"><h4>🧩 Criado pela IA</h4><div class="gal-grid">${Mo.map((x,i)=>fig(`<canvas width="120" height="90" data-gm="${i}"></canvas>`,`<b>m${i+1}</b> ${esc(x.name)}`,KIND_N[x.kind])).join('')}${S.map((x,i)=>fig(`<canvas width="120" height="90" data-gs="${i}"></canvas>`,esc(x.name),'cenário')).join('')}${T.map((x,i)=>fig(`<canvas width="90" height="90" data-gt="${i}"></canvas>`,`<b>t${i+1}</b> ${esc(x.name)}`,'textura')).join('')}</div></div>`}
-  function paintGallery(root,m){root.querySelectorAll('[data-gm]').forEach(cv=>paintThumb(cv,m.models[+cv.dataset.gm].parts,m.textures||[],.55));root.querySelectorAll('[data-gs]').forEach(cv=>paintThumb(cv,m.scen[+cv.dataset.gs].parts,m.textures||[],2.2));
-    root.querySelectorAll('[data-gt]').forEach(cv=>{const t=m.textures[+cv.dataset.gt],c=cv.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#0b1028';c.fillRect(0,0,90,90);const k=Math.min(90/t.w,90/t.h);c.drawImage(texCanvas(t),0,0,t.w*k,t.h*k)})}
-  // ===== Editor de mapas (estilo "studio"): tema + layout linha por linha =====
-  let draft=null,tool='barrier',themeOpen=false;
-  const CELL_L={'':'·',barrier:'🟧',bar:'🟦',wall:'🧱',train1:'🚆',train2:'🚆🚆',train3:'🚆🚆🚆',coin:'🪙',veh:'🚋'};
-  const TOOLS0=[['','⬜ Apagar'],['barrier','🟧 Barreira (pular)'],['bar','🟦 Barra (deslizar)'],['wall','🧱 Muro'],['train1','🚆 Trem curto'],['train2','🚆 Trem médio'],['train3','🚆 Trem longo'],['coin','🪙 Moedas'],['veh','🚋 Veículo']];
-  const NEWROWS=()=>[['','',''],['','barrier',''],['bar','',''],['','','barrier'],['','train1','']];
-  function edSync(){if(!draft)draft=currentMap?srmapSanitize(currentMap):srmapSanitize({name:'Meu mapa',layout:NEWROWS()});currentMap=draft;edRender()}
-  function edCommit(){draft=srmapSanitize(draft);currentMap=draft;edRender()}
-  function edRandom(){const rows=[],n=36;for(let i=0;i<n;i++){const d=Math.min(.75,.25+i/n*.5),c=['','',''];for(let l=0;l<3;l++){if(Math.random()<d){const r=Math.random();c[l]=r<.3?'barrier':r<.5?'bar':r<.65?'wall':r<.82?['train1','train2','train3'][Math.floor(Math.random()*3)]:'coin'}}rows.push({c,g:1})}draft.layout=rows;edCommit()}
-  function edRender(){
-    const box=$('#edBox');if(!box||!draft)return;const d=draft,L=d.layout,y=card.scrollTop,TOOLS=TOOLS0.concat((d.models||[]).map((m,i)=>['m'+(i+1),'🧩 '+m.name]));{const cur=box.querySelector('.ed-theme');if(cur)themeOpen=cur.open}
-    const col=(k,n,v)=>`<label class="ed-col">${n}<input type="color" data-col="${k}" value="${v}"></label>`;
-    const sel=(id,list,val,none)=>`<select id="${id}">${none?`<option value="">${none}</option>`:''}${list.map(x=>`<option value="${x}" ${x===val?'selected':''}>${x}</option>`).join('')}</select>`;
-    const flags=[['rain','Chuva'],['snow','Neve'],['stars','Estrelas'],['nocl','Sem nuvens'],['cyber','Cyber'],['vox','Cubos'],['earth','Planeta']];
-    box.innerHTML=`<h3>🛠️ Editor de mapas</h3><label>Nome do mapa<input id="edName" maxlength="28" value="${esc(d.name)}"></label>
-    <details class="ed-theme" ${themeOpen?'open':''}><summary>🎨 Tema (cores, cenário, veículo e clima)</summary><div class="ed-cols">${col('sky0','Céu topo',d.sky[0])}${col('sky1','Céu meio',d.sky[1])}${col('sky2','Horizonte',d.sky[2])}${col('orb','Sol/Lua',d.orb)}${col('gnd','Chão',d.gnd)}${col('bed','Pista',d.bed)}${col('rail','Trilho',d.rail)}</div>
-    <div class="ed-cols"><label>Cenário${sel('edDeco',SRMAP_DECO,d.deco)}</label><label>Cenário 2${sel('edDeco2',SRMAP_DECO,d.deco2||'','nenhum')}</label><label>Veículo${sel('edVeh',SRMAP_VEH,d.veh||'','nenhum')}</label></div>
-    <div class="ed-flags">${flags.map(f=>`<label><input type="checkbox" data-flag="${f[0]}" ${d[f[0]]?'checked':''}> ${f[1]}</label>`).join('')}</div></details>
-    <p class="ai-map-hint">Escolha uma ferramenta e toque nas células. Cada linha tem 3 pistas (esquerda, meio, direita). Tocar de novo na mesma célula apaga. Toda linha precisa ter uma passagem: se faltar, o editor abre uma sozinho.</p>
-    <div class="ed-tools">${TOOLS.map(t=>`<button type="button" class="btn ${t[0]===tool?'':'g'} s" data-tool="${t[0]}">${t[1]}</button>`).join('')}</div>
-    ${galleryHTML(d)}<p class="ai-map-hint"><b>${L.length}</b> / ${SRMAP_MAXROWS} linhas · início no topo · o mapa repete quando chega no fim</p>
-    <div class="ed-grid">${L.map((r,i)=>`<div class="ed-row"><span class="ed-n">${i+1}</span>${r.c.map((k,c)=>`<button type="button" class="ed-cell k-${k||'none'}" data-cell="${i},${c}">${CELL_L[k]||'🧩'+k.slice(1)}</button>`).join('')}<select data-gap="${i}" aria-label="Espaço até a próxima linha"><option value="0" ${r.g===0?'selected':''}>curto</option><option value="1" ${r.g===1?'selected':''}>normal</option><option value="2" ${r.g===2?'selected':''}>longo</option></select><span class="ed-ops"><button type="button" class="btn s g" data-up="${i}" aria-label="Subir">↑</button><button type="button" class="btn s g" data-dn="${i}" aria-label="Descer">↓</button><button type="button" class="btn s g" data-ins="${i}" aria-label="Inserir linha abaixo">＋</button><button type="button" class="btn s g" data-delrow="${i}" aria-label="Apagar linha">✕</button></span></div>`).join('')}</div>
-    <button type="button" class="btn g" id="edAdd">＋ ADICIONAR LINHA NO FIM</button>
-    ${(d.notes||[]).length?`<ul class="ai-map-test-note">${d.notes.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}
-    <div class="ai-map-actions"><button type="button" class="btn" id="edPlay">▶ TESTAR NO JOGO</button><button type="button" class="btn g" id="edSave">💾 Salvar</button><button type="button" class="btn g" id="edRand">🎲 Layout aleatório justo</button><button type="button" class="btn g" id="edAI">🤖 Pedir ajuste à IA</button><button type="button" class="btn g" id="edNew">🧹 Novo mapa</button></div>`;
-    paintGallery(box,d);card.scrollTop=y;
-  }
-  (function edEvents(){const box=$('#edBox');box.addEventListener('toggle',e=>{if(e.target.classList&&e.target.classList.contains('ed-theme'))themeOpen=e.target.open},true);
-    box.onclick=e=>{const b=e.target.closest('button');if(!b||!draft)return;const L=draft.layout,D=b.dataset;
-      if(D.tool!==undefined){tool=D.tool;edRender();return}
-      if(D.cell){const [r,c]=D.cell.split(',').map(Number);L[r].c[c]=L[r].c[c]===tool?'':tool;edCommit();return}
-      if(D.up!==undefined){const i=+D.up;if(i>0){[L[i-1],L[i]]=[L[i],L[i-1]];edCommit()}return}
-      if(D.dn!==undefined){const i=+D.dn;if(i<L.length-1){[L[i+1],L[i]]=[L[i],L[i+1]];edCommit()}return}
-      if(D.ins!==undefined){if(L.length<SRMAP_MAXROWS){L.splice(+D.ins+1,0,{c:['','',''],g:1});edCommit()}return}
-      if(D.delrow!==undefined){if(L.length>1){L.splice(+D.delrow,1);edCommit()}return}
-      if(b.id==='edAdd'){if(L.length<SRMAP_MAXROWS){L.push({c:['','',''],g:1});edCommit()}else status.textContent='Limite de '+SRMAP_MAXROWS+' linhas.';return}
-      if(b.id==='edPlay'){playMap(aiMapAdd(draft));return}
-      if(b.id==='edSave'){const i=aiMapAdd(draft);renderMine();status.textContent='Salvo: '+MAPS[i].n+'. Está em Meus mapas e no seletor do menu.';return}
-      if(b.id==='edRand'){edRandom();return}
-      if(b.id==='edAI'){setTab('chat');promptEl.focus();status.textContent='Peça mudanças no mapa que está no editor (ex.: "mais trens no final").';return}
-      if(b.id==='edNew'){if(confirm('Começar um mapa novo? O que não foi salvo será perdido.')){draft=srmapSanitize({name:'Meu mapa',layout:NEWROWS()});currentMap=draft;edCommit()}}
-    };
-    box.onchange=e=>{const t=e.target,id=t.id;if(!draft)return;
-      if(id==='edName')draft.name=t.value;else if(id==='edDeco')draft.deco=t.value;else if(id==='edDeco2')draft.deco2=t.value;else if(id==='edVeh')draft.veh=t.value;
-      else if(t.dataset.col){const k=t.dataset.col;if(k.startsWith('sky'))draft.sky[+k[3]]=t.value;else draft[k]=t.value}
-      else if(t.dataset.flag)draft[t.dataset.flag]=t.checked;else if(t.dataset.gap!==undefined)draft.layout[+t.dataset.gap].g=+t.value;else return;
-      edCommit()};
-  })();
-  function swatch(cv,m){const g=cv.getContext('2d'),W=cv.width,H=cv.height,hz=H*.52,sk=g.createLinearGradient(0,0,0,hz);sk.addColorStop(0,m.sky[0]);sk.addColorStop(.7,m.sky[1]);sk.addColorStop(1,m.sky[2]);g.fillStyle=sk;g.fillRect(0,0,W,hz);if(m.stars){g.fillStyle='#fff';for(let i=0;i<40;i++)g.fillRect((i*97)%W,(i*53)%(hz*.9),2,2)}g.fillStyle=m.orb;if(m.earth){g.beginPath();g.arc(W*.74,hz*.5,H*.09,0,7);g.fill()}else g.fillRect(W*.74-H*.06,hz*.5-H*.06,H*.12,H*.12);g.fillStyle=m.hill;g.beginPath();g.moveTo(0,hz);g.bezierCurveTo(W*.2,hz-H*.12,W*.4,hz-H*.02,W*.6,hz-H*.1);g.bezierCurveTo(W*.8,hz-H*.16,W*.9,hz-H*.04,W,hz-H*.08);g.lineTo(W,hz);g.fill();(m.bld.length?m.bld:[]).forEach((c,i)=>{g.fillStyle=c;const bw=W*.07,bh=H*(.1+((i*37)%5)*.03);for(const x of [W*(.06+i*.075),W*(.64+i*.08)])g.fillRect(x,hz-bh,bw,bh)});g.fillStyle=m.gnd;g.fillRect(0,hz,W,H-hz);g.fillStyle=m.bed;g.beginPath();g.moveTo(W*.4,hz);g.lineTo(W*.6,hz);g.lineTo(W*.9,H);g.lineTo(W*.1,H);g.fill();g.strokeStyle=m.rail;g.lineWidth=3;for(const k of [.34,.66]){g.beginPath();g.moveTo(W*(.4+.2*k),hz);g.lineTo(W*(.1+.8*k),H);g.stroke()}if(m.rain){g.strokeStyle='rgba(218,238,255,.45)';for(let i=0;i<30;i++){const x=(i*61)%W,y=(i*43)%(H*.9);g.beginPath();g.moveTo(x,y);g.lineTo(x-4,y+12);g.stroke()}}if(m.snow){g.fillStyle='#fff';for(let i=0;i<40;i++){g.beginPath();g.arc((i*73)%W,(i*47)%H,2,0,7);g.fill()}}}
-  function playMap(i){CFG.map=i;save();startGame()}
-  function copyCode(m){const code=aiMapCode(m);if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(code).then(()=>{status.textContent='Código copiado! Seu amigo cola em Meus mapas > Importar.'}).catch(()=>prompt('Copie o código:',code));else prompt('Copie o código:',code)}
-  function renderMine(){const box=$('#aiMineList'),list=MAPS.map((m,i)=>[m,i]).filter(x=>x[1]>=AIMAP_BASE);box.innerHTML=list.length?list.map(([m,i])=>`<div class="ai-file-row"><span style="display:flex;align-items:center;gap:8px"><i style="width:34px;height:22px;border-radius:6px;background:linear-gradient(${m.sky[0]},${m.sky[2]} 60%,${m.gnd} 60%)"></i>${esc(m.n)}</span><span><button type="button" class="btn s" data-mplay="${i}">Jogar</button> <button type="button" class="btn g" data-medit="${i}">Editar</button> <button type="button" class="btn g" data-mcode="${i}">Código</button> <button type="button" class="btn g" data-mdel="${i}">Excluir</button></span></div>`).join(''):'<p>Você ainda não salvou nenhum mapa.</p>';box.querySelectorAll('[data-mplay]').forEach(b=>b.onclick=()=>playMap(Number(b.dataset.mplay)));box.querySelectorAll('[data-medit]').forEach(b=>b.onclick=()=>{draft=srmapSanitize(MAPS[Number(b.dataset.medit)]);currentMap=draft;setTab('editor')});box.querySelectorAll('[data-mcode]').forEach(b=>b.onclick=()=>copyCode(MAPS[Number(b.dataset.mcode)]));box.querySelectorAll('[data-mdel]').forEach(b=>b.onclick=()=>{if(confirm('Excluir este mapa do aparelho?')){aiMapRemove(Number(b.dataset.mdel));renderMine()}})}
-  $('#aiImportBtn').onclick=()=>{try{const i=aiMapAdd(aiMapFromCode($('#aiImportCode').value));$('#aiImportCode').value='';renderMine();status.textContent='Mapa importado: '+MAPS[i].n}catch(_){status.textContent='Código inválido. Peça para o amigo copiar de novo.'}};
-  renderMine();
-  function renderMap(map,ignored){map=srmapSanitize(map);currentMap=map;draft=map;const result=$('#aiMapResult'),extra=[].concat(map.notes||[],(ignored||[]).map(t=>'Ignorado (não permitido): '+t));
-    result.innerHTML=`<h2>✅ ${esc(map.n)}</h2><p>${esc(map.desc||'Mapa pronto para jogar.')}</p><div class="ai-map-preview-wrap"><canvas id="aiMapPreview" width="900" height="420" aria-label="Prévia visual do mapa"></canvas></div><p class="ai-map-test-note">Cenário: ${esc(map.deco)}${map.deco2?' + '+esc(map.deco2):''}${map.veh?' · Veículo: '+esc(map.veh):''}. Layout de ${map.layout.length} linhas, jogado no motor real com a mesma física de todos os mapas. Não dá moedas da carteira e não entra nos rankings oficiais.</p>${extra.length?`<ul class="ai-map-test-note">${extra.map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`:''}${galleryHTML(map)}<div class="ai-map-actions"><button type="button" class="btn" id="aiMapPlay">▶ JOGAR AGORA</button><button type="button" class="btn g" id="aiMapSave">💾 Salvar em Meus mapas</button><button type="button" class="btn g" id="aiMapCopy">📋 Copiar código</button><button type="button" class="btn g" id="aiMapDetailsBtn">Ver estrutura gerada</button><button type="button" class="btn g" id="aiMapSubmit">Enviar para revisão</button></div><details class="ai-map-details" id="aiMapDetails" hidden><summary>Estrutura JSON</summary><pre class="ai-map-json"></pre></details>`;
-    result.querySelector('pre').textContent=JSON.stringify(map,null,2);swatch(result.querySelector('#aiMapPreview'),map);paintGallery(result,map);
-    result.querySelector('#aiMapPlay').onclick=()=>{playMap(aiMapAdd(map))};
-    result.querySelector('#aiMapSave').onclick=()=>{const i=aiMapAdd(map);renderMine();status.textContent='Salvo: '+MAPS[i].n+'. Escolha em Meus mapas ou no seletor do menu.'};
-    result.querySelector('#aiMapCopy').onclick=()=>copyCode(map);
-    result.querySelector('#aiMapDetailsBtn').onclick=()=>{const d=result.querySelector('#aiMapDetails');d.hidden=!d.hidden};
-    result.querySelector('#aiMapSubmit').onclick=()=>{status.textContent='O envio para a fila administrativa precisa estar conectado ao backend de publicação. Por enquanto, use “Copiar código” para mandar o mapa para revisão.';setTab('chat')};
-    $('#aiPreviewEmpty').hidden=true;$('#aiPreviewWorking').hidden=true;$('#aiPreviewReady').hidden=false;setTab('preview')
-  }
-  $('#aiMapGenerate').onclick=async()=>{
-    const prompt=promptEl.value.trim();if(!prompt){status.textContent='Escreva sua ideia ou a mudança que deseja fazer.';return}if(prompt.length<12){status.textContent='Escreva pelo menos 12 caracteres.';return}if(credits<25){status.textContent='Seus créditos de hoje acabaram. A renovação está prevista para as 05:00.';return}if(!(ACC&&ACC.online)){status.textContent='Entre em uma conta conectada ao servidor para continuar.';return}
-    const btn=$('#aiMapGenerate');btn.disabled=true;$('#aiPreviewEmpty').hidden=true;$('#aiPreviewReady').hidden=true;$('#aiPreviewWorking').hidden=false;setTab('preview');status.textContent='A IA está trabalhando no mapa…';chat.push({role:'user',content:prompt});renderChat();
-    try{const attachmentPayload=attachments.filter(a=>a.kind==='text').map(a=>({name:a.name,content:a.content}));const response=await fetch('/api/maps/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,currentMap,attachments:attachmentPayload})});const payload=await response.json().catch(()=>({error:'Resposta inválida do servidor.'}));if(!response.ok||!payload||!payload.map)throw new Error((payload&&payload.error)||('Falha HTTP '+response.status));
-      currentMap=srmapSanitize(payload.map);credits=Math.max(0,credits-25);try{localStorage.setItem(creditKey,String(credits));localStorage.setItem(dayKey,stamp)}catch(_){}$('#aiMapCredits').textContent=credits;$('#aiMeter').style.width=Math.round(credits/2)+'%';chat.push({role:'assistant',content:`Mapa atualizado: ${currentMap.name||'Mapa novo'}. ${currentMap.description||''} Toque em JOGAR AGORA na aba Preview.${(payload.ignoredRequests||[]).length?' Ignorei pedidos que dariam vantagem: '+payload.ignoredRequests.join('; ')+'.':''}`});renderChat();renderMap(currentMap,payload.ignoredRequests);promptEl.value='';status.textContent='Mapa gerado. Você pode voltar ao chat e pedir alterações; cada geração/alteração custa 25 créditos.';
-    }catch(e){$('#aiPreviewWorking').hidden=true;$('#aiPreviewEmpty').hidden=false;setTab('chat');status.textContent='Não foi possível gerar: '+String(e&&e.message||e)+' Verifique a função do EdgeOne e a variável GROQ_API_KEY.'}
-    finally{btn.disabled=false}
-  };
 }
 
 function roomSend(m){if(MATCH.socket)MATCH.socket.send(m)}
@@ -1030,158 +914,8 @@ MAPS.push(
   { n:'Neon Samurai: Distrito Zero 🏮', sky:['#090b25','#28245e','#a52c76'], orb:'#ffb4d7', gnd:'#17152d', bed:'#302544', rail:'#ff4fd8', bld:['#4d347e','#1e6682','#8d285c'], deco:'samurai', deco2:'lantern', cyber:true, stars:true, nocl:true, veh:'metro', steam:true }
 );
 
-/* ===== SRMAP: validação de mapas criados por jogadores/IA =====
-   Um mapa = tema visual (cores, cenário, veículo, clima) + layout (linhas de obstáculos nas 3 pistas).
-   O motor do jogo continua sendo o mesmo para todos: velocidade, pulo, gravidade e física não são editáveis.
-   Qualquer campo fora da lista é descartado, então nem a IA nem um código colado criam voo, gravidade,
-   velocidade, atalhos ou código. O layout passa por um verificador de justiça: toda linha tem passagem alcançável. */
-const SRMAP_CELLS = ['', 'barrier', 'bar', 'wall', 'train1', 'train2', 'train3', 'coin', 'veh'];
-const SRMAP_MAXROWS = 120;
-const SRMAP_SOLID = c => !!c && c !== 'coin';
-// Modelos que a IA desenha (cada um = peças em blocos). O "tipo" define a colisão, que é sempre a do motor:
-// jump = pular por cima, slide = deslizar por baixo, block = muro, long = trem comprido, veh = veículo que vem de frente.
-const SRMAP_KINDS = { jump: { H: 55, max: 70, len: 120 }, slide: { H: 100, max: 120, len: 40 }, block: { H: 140, max: 160, len: 90 }, long: { H: 110, max: 130, len: 800 }, veh: { H: 105, max: 130, len: 520 } };
-const SRMAP_DECO = ['city', 'cactus', 'palm', 'pine', 'rock', 'crater', 'voxtree', 'house'];
-const SRMAP_VEH = ['bus', 'ghost', 'sled', 'buggy', 'logtruck', 'minecart', 'bullet', 'metro', 'bonde', 'wagon', 'ufo'];
-const SRMAP_FLAGS = ['rain', 'snow', 'stars', 'nocl', 'cyber', 'vox', 'earth'];
-function srmapHex(v, fb) {
-  let s = String(v == null ? '' : v).trim().toLowerCase();
-  if (/^#[0-9a-f]{3}$/.test(s)) s = '#' + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
-  return /^#[0-9a-f]{6}$/.test(s) ? s : fb;
-}
-function srmapRGB(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
-function srmapToHex(r) { return '#' + r.map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join(''); }
-function srmapMix(a, b, t) { const A = srmapRGB(a), B = srmapRGB(b); return srmapToHex(A.map((x, i) => x + (B[i] - x) * t)); }
-function srmapLum(h) { return srmapRGB(h).map(x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }).reduce((s, x, i) => s + x * [.2126, .7152, .0722][i], 0); }
-function srmapContrast(a, b) { const x = srmapLum(a), y = srmapLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
-function srmapText(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f<>`\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); }
-
-
-function srmapNum(v, lo, hi, fb) { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : fb; }
-// Textura em pixel art: até 16x16, paleta de até 8 cores, linhas com dígitos 0-7 ("." = transparente)
-function srmapTex(raw) {
-  const rows = (Array.isArray(raw && raw.rows) ? raw.rows : []).slice(0, 16).map(r => String(r).replace(/[^0-7.]/g, '').slice(0, 16));
-  const pal = (Array.isArray(raw && raw.pal) ? raw.pal : []).slice(0, 8).map(c => srmapHex(c, null)).filter(Boolean);
-  if (rows.length < 2 || !pal.length) return null;
-  const w = Math.max(2, ...rows.map(r => r.length));
-  return { name: srmapText(raw.name, 20) || 'textura', w, h: rows.length, pal, rows: rows.map(r => r.padEnd(w, '.')) };
-}
-// Peças: {dx (lado), w (largura), h0/h1 (altura), dz/d (posição/comprimento como fração do objeto), c (cor), t (textura t1..t8)}
-function srmapParts(raw, kind, texN, notes, label) {
-  const big = kind === 'scen', K = SRMAP_KINDS[kind], maxH = big ? 400 : K.max;
-  let parts = (Array.isArray(raw) ? raw : []).slice(0, 24).map(p => {
-    p = p && typeof p === 'object' ? p : {};
-    const dx = srmapNum(p.dx, big ? -1.5 : -.45, big ? 1.5 : .45, 0);
-    const w = big ? srmapNum(p.w, .05, 2.5, .6) : Math.max(.05, Math.min(srmapNum(p.w, .05, .9, .5), 2 * (.5 - Math.abs(dx))));
-    const h0 = srmapNum(p.h0, 0, maxH - 4, 0), h1 = srmapNum(p.h1, h0 + 4, maxH, h0 + 20), d = srmapNum(p.d, .04, 1, 1), dz = srmapNum(p.dz, 0, 1 - d, 0);
-    return { dx, w, h0, h1, dz, d, c: srmapHex(p.c, '#888888'), t: /^t[1-8]$/.test(p.t) && +p.t[1] <= texN ? p.t : '' };
-  });
-  if (!parts.length) return null;
-  if (!big) {
-    const base = c => ({ dx: 0, w: .8, h0: 0, h1: K.H * .9, dz: 0, d: 1, c, t: '' }), c0 = parts[0].c;
-    if (kind === 'slide') { // por baixo precisa dar para passar: nada no meio embaixo; e precisa ter a "viga" visível
-      const n = parts.length; parts = parts.filter(p => !(p.h0 < 38 && Math.abs(p.dx) - p.w / 2 < .28));
-      if (parts.length < n && notes) notes.push(label + ': removi peças que bloqueavam o caminho de baixo.');
-      if (!parts.some(p => p.h0 >= 38 && p.h1 >= 80 && p.w >= .6)) { parts.push({ dx: 0, w: .8, h0: 55, h1: 100, dz: 0, d: 1, c: c0, t: '' }); if (notes) notes.push(label + ': adicionei a viga visível.'); }
-    } else {
-      // o desenho precisa cobrir a área que machuca (largura, altura e comprimento), senão o perigo ficaria invisível
-      const tall = parts.filter(p => p.h1 >= K.H * .5 && p.w >= .3).sort((a, b) => a.dz - b.dz);
-      let cov = 0, end = 0; tall.forEach(p => { const a = Math.max(p.dz, end), b = p.dz + p.d; if (b > a) { cov += b - a; end = b; } });
-      const span = Math.max(...parts.map(p => p.dx + p.w / 2)) - Math.min(...parts.map(p => p.dx - p.w / 2)), top = Math.max(...parts.map(p => p.h1));
-      if (span < .62 || top < K.H * .8 || cov < .85) { parts.unshift(base(c0)); if (notes) notes.push(label + ': adicionei uma base para o obstáculo ficar bem visível.'); }
-    }
-  }
-  return parts;
-}
-function srmapModel(raw, texN, notes, i) {
-  if (!raw || typeof raw !== 'object' || !SRMAP_KINDS[raw.kind]) return null;
-  const kind = raw.kind, K = SRMAP_KINDS[kind], name = srmapText(raw.name, 24) || ('Modelo ' + (i + 1));
-  const parts = srmapParts(raw.parts, kind, texN, notes, name); if (!parts) return null;
-  const len = kind === 'long' ? srmapNum(raw.len, 500, 1200, K.len) : kind === 'veh' ? srmapNum(raw.len, 300, 900, K.len) : K.len;
-  return { name, kind, len: Math.round(len), parts };
-}
-function srmapScenery(raw, texN, notes, i) {
-  if (!raw || typeof raw !== 'object') return null;
-  const parts = srmapParts(raw.parts, 'scen', texN, notes, 'Cenário ' + (i + 1)); if (!parts) return null;
-  return { name: srmapText(raw.name, 24) || ('Cenário ' + (i + 1)), parts };
-}
-
-// Layout: lista de linhas {c:[esq,meio,dir], g:0|1|2 (espaço até a próxima: curto/normal/longo)}.
-// Aceita também linhas no formato ["barrier","","coin"]. Corrige sozinho o que for impossível de passar.
-function srmapLayout(raw, notes, models) {
-  models = models || [];
-  const okCell = c => SRMAP_CELLS.includes(c) || (/^m[1-6]$/.test(c) && !!models[+c[1] - 1]);
-  const isVeh = c => c === 'veh' || (/^m[1-6]$/.test(c) && !!models[+c[1] - 1] && models[+c[1] - 1].kind === 'veh');
-  const rows = (Array.isArray(raw) ? raw : []).slice(0, SRMAP_MAXROWS).map(r => {
-    const c0 = Array.isArray(r) ? r : (r && Array.isArray(r.c) ? r.c : []);
-    const c = [0, 1, 2].map(i => okCell(c0[i]) ? c0[i] : '');
-    const g = Array.isArray(r) ? 1 : Math.max(0, Math.min(2, Math.floor(Number(r && r.g)) || 0));
-    return { c, g: Array.isArray(r) ? 1 : g };
-  });
-  let reach = [true, true, true], fixed = 0;
-  rows.forEach((row, i) => {
-    // veículo que cruza: a pista dele fica livre de obstáculos sólidos nas 2 linhas seguintes
-    for (let l = 0; l < 3; l++) if (isVeh(row.c[l])) for (let k = 1; k <= 2; k++) { const nx = rows[i + k]; if (nx && SRMAP_SOLID(nx.c[l]) && !isVeh(nx.c[l])) { nx.c[l] = ''; fixed++; } }
-    const pass = l => !SRMAP_SOLID(row.c[l]);
-    const can = l => pass(l) && reach.some((ok, p) => ok && Math.abs(p - l) <= 1);
-    if (![0, 1, 2].some(can)) { // nenhuma passagem alcançável: abre a pista livre mais próxima
-      const from = reach.map((ok, p) => ok ? p : -9).filter(p => p >= 0);
-      let best = 1, bd = 9;
-      for (let l = 0; l < 3; l++) { const d = Math.min(...from.map(p => Math.abs(p - l))); if (d <= 1 && d < bd) { bd = d; best = l; } }
-      row.c[best] = ''; fixed++;
-    }
-    reach = [0, 1, 2].map(can);
-  });
-  const empty = rows.length && rows.every(r => r.c.every(c => !c));
-  if (fixed && notes) notes.push('Abri ' + fixed + ' passagem(ns) no layout para o mapa ser sempre possível de passar.');
-  if (empty && notes) notes.push('O layout está vazio: adicione obstáculos.');
-  return rows;
-}
-function srmapSanitize(raw) {
-  const notes = [], r = raw && typeof raw === 'object' ? raw : {};
-  const name = srmapText(r.name, 28) || 'Mapa da IA';
-  const sky0 = Array.isArray(r.sky) ? r.sky : [];
-  const sky = [srmapHex(sky0[0], '#4fc3ff'), srmapHex(sky0[1], '#8fdcff'), srmapHex(sky0[2], '#d4f3ff')];
-  const orb = srmapHex(r.orb, '#fff6b8');
-  let gnd = srmapHex(r.gnd, '#a8e05f'), bed = srmapHex(r.bed, '#4d5568'), rail = srmapHex(r.rail, '#cfd6e6');
-  // Justiça visual: a pista, o trilho e os obstáculos precisam continuar visíveis em qualquer tema.
-  if (srmapLum(bed) > .45) { bed = srmapMix(bed, '#000000', .45); notes.push('Leito da pista escurecido para os obstáculos aparecerem.'); }
-  if (srmapLum(bed) < .012) { bed = srmapMix(bed, '#ffffff', .18); notes.push('Leito da pista clareado para não sumir no escuro.'); }
-  if (srmapContrast(bed, gnd) < 1.3) { gnd = srmapLum(bed) > .2 ? srmapMix(gnd, '#000000', .4) : srmapMix(gnd, '#ffffff', .4); notes.push('Chão ajustado para a pista se destacar.'); }
-  if (srmapContrast(rail, bed) < 3) { rail = srmapContrast('#ffffff', bed) >= srmapContrast('#101428', bed) ? '#ffffff' : '#101428'; notes.push('Trilho ajustado para ficar visível.'); }
-  const bld = (Array.isArray(r.bld) ? r.bld : []).slice(0, 4).map(c => srmapHex(c, null)).filter(Boolean);
-  const veh = SRMAP_VEH.includes(r.veh) ? r.veh : '';
-  const textures = (Array.isArray(r.textures) ? r.textures : []).slice(0, 8).map(srmapTex).filter(Boolean);
-  const models = (Array.isArray(r.models) ? r.models : []).slice(0, 6).map((m, i) => srmapModel(m, textures.length, notes, i)).filter(Boolean);
-  const scen = (Array.isArray(r.scenery) ? r.scenery : Array.isArray(r.scen) ? r.scen : []).slice(0, 4).map((m, i) => srmapScenery(m, textures.length, notes, i)).filter(Boolean);
-  const layout = srmapLayout(r.layout, notes, models);
-  const okDeco = d => SRMAP_DECO.includes(d) || (d === 'custom' && scen.length > 0);
-  const deco = okDeco(r.deco) ? r.deco : 'city';
-  const deco2 = okDeco(r.deco2) ? r.deco2 : '';
-  const map = { name, n: '🤖 ' + name, ai: true, desc: srmapText(r.description || r.desc, 160), sky, orb, gnd, bed, rail, bld, deco, hill: srmapMix(gnd, sky[2], .35), win: srmapHex(r.win, '#fff1ad'), layout, textures, models, scen };
-  if (deco2) map.deco2 = deco2;
-  if (veh) map.veh = veh;
-  SRMAP_FLAGS.forEach(f => { if (r[f] === true) map[f] = true; });
-  // O motor lê sempre 4 cores de prédio: completa para 4 (cenário de cidade sem cores recebe uma paleta do tema)
-  if (!map.bld.length && (map.deco === 'city' || map.deco2 === 'city')) map.bld = [srmapMix(gnd, '#ffffff', .25), srmapMix(sky[0], '#808080', .5), srmapMix(rail, '#202040', .5), srmapMix(sky[1], '#303030', .4)];
-  while (map.bld.length && map.bld.length < 4) map.bld.push(map.bld[map.bld.length % Math.max(1, map.bld.length)]);
-  map.notes = notes;
-  return map;
-}
-
-// ----- Mapas criados pela IA: ficam no aparelho, entram na lista de mapas e rodam no motor real -----
-const AIMAP_KEY = 'sr_ai_maps_v1', AIMAP_MAX = 10, AIMAP_BASE = MAPS.length;
-function aiMapsStore() { try { localStorage.setItem(AIMAP_KEY, JSON.stringify(MAPS.slice(AIMAP_BASE).map(({ notes, ...m }) => m))); } catch (_) {} }
-function aiMapAdd(raw) {
-  const m = srmapSanitize(raw), same = MAPS.findIndex((x, i) => i >= AIMAP_BASE && x.name === m.name);
-  if (same >= 0) { MAPS[same] = m; aiMapsStore(); return same; } // mesmo nome = atualiza o mapa salvo
-  if (MAPS.length - AIMAP_BASE >= AIMAP_MAX) { MAPS.splice(AIMAP_BASE, 1); if (CFG.map > AIMAP_BASE) CFG.map--; else if (CFG.map === AIMAP_BASE) CFG.map = 0; }
-  MAPS.push(m); aiMapsStore(); return MAPS.length - 1;
-}
-function aiMapRemove(i) { if (i < AIMAP_BASE || i >= MAPS.length) return; MAPS.splice(i, 1); if (CFG.map === i) CFG.map = 0; else if (CFG.map > i) CFG.map--; aiMapsStore(); save(); }
-function aiMapCode(m) { const { notes, hill, ai, n, ...spec } = m; return 'SRMAP1:' + btoa(unescape(encodeURIComponent(JSON.stringify(spec)))); }
-function aiMapFromCode(t) { t = String(t || '').trim(); if (!t.startsWith('SRMAP1:') || t.length > 80000) throw new Error('Código inválido.'); return JSON.parse(decodeURIComponent(escape(atob(t.slice(7))))); }
-try { const a = JSON.parse(localStorage.getItem(AIMAP_KEY) || '[]'); if (Array.isArray(a)) a.slice(0, AIMAP_MAX).forEach(x => MAPS.push(srmapSanitize(x))); } catch (_) {}
+// Mapas criados por jogadores foram removidos: só existem os mapas originais.
+try { ['sr_ai_maps_v1'].forEach(k => localStorage.removeItem(k)); Object.keys(localStorage).filter(k => /^sr_ai_studio_/.test(k)).forEach(k => localStorage.removeItem(k)); } catch (_) {}
 if (!(CFG.map >= 0 && CFG.map < MAPS.length)) CFG.map = 0;
 // Na Lua a gravidade é menor: pulos mais longos e flutuantes
 const AG = () => { const c = CHARS[CFG.char]; return c && c.agile > 1 ? Math.min(1.5, c.agile) : 1; }; // skins ágeis (campo agile do painel)
@@ -1227,7 +961,7 @@ function resume() { if (LC.maint) { alert(LC.maintMsg || 'Jogo em manutenção. 
 function crash(title) {
   if (st !== 'play') return;
   if (!(MATCH.active && !MATCH.eliminated) && board.t > 0 && title !== 'TEMPO ESGOTADO') { board.t = 0; pl.inv = 2.6; msgTxt = '🛹 A PRANCHA QUEBROU!'; msgT = 2; return; } // a prancha absorve uma batida
-  stopMusic(); sfx(110, .5, 'sawtooth', .12, 40); st = 'dying'; dieT = 0; dieTitle = title; pl.roll = 0; slideDust = []; $('#pauseBtn').style.visibility = 'hidden'; if (/PEGO/.test(title)) { guard.t = Math.max(guard.t, 3); guard.age = 0; } pl.vy = 0; const sc = score(), noCoinSeconds = Math.floor(Math.max(ncBest, ncCur) / 1000); const aiRun = !!(MAPS[CFG.map] && MAPS[CFG.map].ai); if (!aiRun && sc > CFG.best) CFG.best = sc; if (!CFG.inf && !aiRun) CFG.wallet += Math.round(coins * LC.coinMul); MATCH.frames.push({t:Math.round(performance.now()-MATCH.startedAt),d:Math.round(dist),l:Math.round(pl.lane),y:Math.round(pl.jy),c:CFG.char,o:objs.filter(o=>o.wz-dist<1700&&o.wz-dist>-100).slice(0,5).map(o=>({t:o.t,l:o.l,z:Math.round(o.wz-dist)}))}); if (MATCH.active && !MATCH.eliminated) { MATCH.eliminated=true; roomSend({type:'eliminate',reason:title,distance:Math.floor(dist)}); }
+  stopMusic(); sfx(110, .5, 'sawtooth', .12, 40); st = 'dying'; dieT = 0; dieTitle = title; pl.roll = 0; slideDust = []; $('#pauseBtn').style.visibility = 'hidden'; if (/PEGO/.test(title)) { guard.t = Math.max(guard.t, 3); guard.age = 0; } pl.vy = 0; const sc = score(), noCoinSeconds = Math.floor(Math.max(ncBest, ncCur) / 1000); if (sc > CFG.best) CFG.best = sc; if (!CFG.inf) CFG.wallet += Math.round(coins * LC.coinMul); MATCH.frames.push({t:Math.round(performance.now()-MATCH.startedAt),d:Math.round(dist),l:Math.round(pl.lane),y:Math.round(pl.jy),c:CFG.char,o:objs.filter(o=>o.wz-dist<1700&&o.wz-dist>-100).slice(0,5).map(o=>({t:o.t,l:o.l,z:Math.round(o.wz-dist)}))}); if (MATCH.active && !MATCH.eliminated) { MATCH.eliminated=true; roomSend({type:'eliminate',reason:title,distance:Math.floor(dist)}); }
   void saveCloudRun({ score:sc, noCoinSeconds, distance:Math.floor(dist), coins, replay:MATCH.frames.slice(-360) }); addRank(sc); save(); over = { title, score: sc }; /* a tela de fim aparece depois da animação de queda */ }
 const score = () => Math.floor(dist / 50) + coins * 10;
 // Tropeço: 1ª batida chama o guarda; 2ª batida enquanto ele está na sua cola = pego
@@ -1384,7 +1118,6 @@ mpFetchAdmin();
 function addRank(sc) {
   const t = Math.floor(Math.max(ncBest, ncCur) / 1000);
   lastNc = t; lastNcNew = false;
-  if (MAPS[CFG.map] && MAPS[CFG.map].ai) return; // mapas criados por IA não entram nos rankings oficiais
   // O modo NOCOIN só registra tentativas de pelo menos 1 segundo sem moedas.
   if (t < 1) return;
   const L = myRank();
@@ -1419,38 +1152,7 @@ function hud() {
 // Maria Fumaça: em certos mapas, um trem vem de frente numa das pistas. Só sai quando a pista está livre.
 let mtArm = null, mtNextAt = 6500;
 const steamOn = () => { const M = MAPS[CFG.map]; if (M.veh) return true; return M.steam !== undefined ? !!M.steam : !(M.moon || M.cyber); }; // M.steam:true/false força por mapa
-const LAY_GAP = [420, 600, 800], LAY_LEN = { barrier: 120, bar: 40, wall: 90, train1: 500, train2: 850, train3: 1200 };
-const VEH_LEN = { wagon: 440, ufo: 360, bonde: 620, bus: 520, ghost: 780, sled: 520, buggy: 300, logtruck: 700, minecart: 720, bullet: 900, metro: 780 };
-// Mapas criados por jogadores: as linhas do layout viram os MESMOS objetos do motor (barrier, bar, wall, train, coin, steam).
-function spawnLayout(M) {
-  const rows = M.layout;
-  while (nextWz < dist + ZMAX) {
-    const row = rows[layI % rows.length]; layI++; let maxLen = 0;
-    for (let i = 0; i < 3; i++) {
-      const k = row.c[i], l = i - 1; if (!k) continue;
-      const mm = /^m([1-6])$/.exec(k);
-      if (mm) { // modelo desenhado pela IA: a colisão é a do tipo dele (jump/slide/block/long/veh), igual ao motor
-        const m = M.models && M.models[+mm[1] - 1]; if (!m) continue;
-        if (m.kind === 'veh') { layPend.push({ l, wz: nextWz, model: m }); continue; }
-        const t = { jump: 'barrier', slide: 'bar', block: 'wall', long: 'train' }[m.kind]; objs.push({ t, l, wz: nextWz, len: m.len, col: COLORS[0], model: m }); maxLen = Math.max(maxLen, m.len); continue;
-      }
-      if (k === 'coin') { for (let q = 0; q < 5; q++) objs.push({ t: 'coin', l, wz: nextWz + q * 170, len: 0 }); continue; }
-      if (k === 'veh') { layPend.push({ l, wz: nextWz }); continue; } // o veículo entra depois, para chegar junto com a linha
-      const t = k.startsWith('train') ? 'train' : k, len = LAY_LEN[k]; if (!len) continue;
-      objs.push({ t, l, wz: nextWz, len, col: COLORS[(layI + i) % 4] }); maxLen = Math.max(maxLen, len);
-    }
-    nextWz += Math.max(maxLen, 720) + LAY_GAP[row.g | 0 || 0];
-  }
-  // O veículo vem de frente: nasce mais longe para encontrar o jogador na mesma hora em que a linha dele chega
-  const vh = M.veh || 'steam', k = (speed + 560) / Math.max(speed, 1);
-  layPend = layPend.filter(p => {
-    const dr = p.wz - dist; if (dr <= 0) return false;
-    if (dr * k > ZMAX * .92) return true;
-    objs.push({ t: 'steam', veh: p.model ? 'steam' : vh, l: p.l, wz: dist + dr * k, len: p.model ? p.model.len : (VEH_LEN[vh] || 820), v: 560, model: p.model }); vehHorn(M.veh); return false;
-  });
-}
 function spawn() {
-  { const LM = MAPS[CFG.map]; if (LM && LM.ai && LM.layout && LM.layout.length) { spawnLayout(LM); return; } }
   while (nextWz < dist + ZMAX) {
     if (!mtArm && steamOn() && dist > mtNextAt) mtArm = { l: [-1, 0, 1][Math.floor(Math.random() * 3)] };
     let free = [-1, 0, 1][Math.floor(Math.random() * 3)]; const gap = Math.max(420, 800 - dist / 80); let maxLen = 0;
@@ -1587,27 +1289,6 @@ function box(l, z0, z1, hgt, col, wd = .8, h0 = 0) { // bloco "voxel" estilo Cro
   g.fillStyle = col; g.fillRect(a.x - w / 2 * a.s, ta, w * a.s, ya - ta); // frente
   return { a, ta, w, ya };
 }
-// ----- Modelos e texturas criados pela IA: só dados (peças em blocos + pixel art), desenhados com o mesmo box() do motor -----
-function texPat(tx) {
-  if (!tx) return null; if (tx._p) return tx._p;
-  const c = document.createElement('canvas'); c.width = tx.w; c.height = tx.h; const x = c.getContext('2d');
-  tx.rows.forEach((r, y) => { for (let i = 0; i < tx.w; i++) { const k = r[i]; if (k === '.' || tx.pal[+k] === undefined) continue; x.fillStyle = tx.pal[+k]; x.fillRect(i, y, 1, 1); } });
-  return (tx._p = g.createPattern(c, 'repeat'));
-}
-function texFill(tx, x, y, w, h) {
-  const p = texPat(tx); if (!p || w < 1 || h < 1) return;
-  try { p.setTransform(new DOMMatrix().translate(x, y).scale(w / tx.w, h / tx.h)); } catch (e) { return; }
-  g.save(); g.imageSmoothingEnabled = false; g.fillStyle = p; g.fillRect(x, y, w, h); g.restore();
-}
-function drawParts(parts, texs, lane, mul, z, len, NZ) { // mul: 1 = lado direto do modelo; sd = afasta da pista (cenário)
-  const ord = parts.slice().sort((a, b) => (b.dz - a.dz) || (a.h0 - b.h0));
-  for (const p of ord) {
-    const z0 = z + p.dz * len, z1 = z0 + Math.max(6, p.d * len); if (z1 < NZ || z0 > ZMAX) continue;
-    const r = box(lane + mul * p.dx, Math.max(z0, NZ), z1, p.h1, p.c, p.w, p.h0);
-    if (p.t && texs && texs[+p.t[1] - 1] && z0 >= NZ) { const fw = r.w * r.a.s; texFill(texs[+p.t[1] - 1], r.a.x - fw / 2, r.ta, fw, r.ya - r.ta); }
-  }
-}
-function drawModel(o, z, NZ, M) { drawParts(o.model.parts, M.textures, o.l, 1, z, o.len, NZ); }
 function sideQuad(l, za, zb, h0, h1, off, col) { // faixa/janela na lateral voltada para o centro
   if (l === 0) return; const sx = l < 0 ? 1 : -1; za = Math.max(za, -200); zb = Math.min(zb, ZMAX); if (zb <= za) return;
   const pt = (zz, hh) => { const p = P(l, zz); return [p.x + sx * LW * off * p.s, p.y - hh * U * p.s]; };
@@ -1875,7 +1556,6 @@ function shade(hex, k) { const n = parseInt(hex.slice(1), 16); const c = v => Ma
 function deco(sd, k, z, M, row = 0) {
   const h = hash(k + row * 13, sd), kind = (row && M.deco2) || M.deco || 'city', INK = '#14172e';
   if (hash(k + row * 5, sd + 7) < .25) return;
-  if (kind === 'custom') { const S = M.scen; if (!S || !S.length) return; const sm = S[Math.floor(h * S.length * .999)]; drawParts(sm.parts, M.textures, sd * (3.3 + row * 2.4), sd, z, 380, -200); return; }
   // Cenários exclusivos, compostos por formas próprias (não são apenas recolorações dos mapas antigos).
   if (kind === 'pixelMine') {
     const lx=sd*(2.15+h*.72+row*1.5), hh=74+hash(k,sd+18)*115;
@@ -2058,7 +1738,7 @@ function drawBiomeHorizon(M, now) {
     g.fillStyle='#737989';g.beginPath();g.ellipse(W*.23,h*.94,W*.22,h*.11,0,Math.PI,Math.PI*2);g.fill();g.beginPath();g.ellipse(W*.78,h*.96,W*.3,h*.1,0,Math.PI,Math.PI*2);g.fill();
     g.strokeStyle='#d4d8e4';g.lineWidth=2*U;g.beginPath();g.ellipse(W*.24,h*.94,W*.13,h*.045,0,0,Math.PI*2);g.stroke();
   } else {
-    land(M.ai&&M.hill||'#a56b64',h*.14,8*U,18*U);
+    land('#a56b64',h*.14,8*U,18*U);
   }
 }
 
@@ -2210,8 +1890,7 @@ function drawWorld(now) {
     else { const back = z + o.len; if (back < -110) al = Math.max(0, 1 + (back + 110) / 80); }
     if (o.t === 'steam') al = Math.min(al, Math.max(0, (ZMAX - z) / 700)); // surge da névoa
     if (al < .03) continue; g.globalAlpha = al;
-    if (o.model) drawModel(o, z, NZ, M);
-    else if (o.t === 'train') { const nz = Math.max(z, NZ), col = CROSSY_COL[o.col] || o.col, hb = TH * .6, ze = z + o.len, vis = o.l !== 0 ? (o.l < 0 ? .4 : -.4) : 0;
+    if (o.t === 'train') { const nz = Math.max(z, NZ), col = CROSSY_COL[o.col] || o.col, hb = TH * .6, ze = z + o.len, vis = o.l !== 0 ? (o.l < 0 ? .4 : -.4) : 0;
       const wheel = sx => { for (let s2 = 30; s2 < o.len - 40; s2 += 150) { const a0 = z + s2, b0 = a0 + 36; if (b0 > NZ && a0 < ZMAX) box(o.l + sx, Math.max(a0, NZ), b0, 20, '#262b38', .09); } };
       if (o.l === 0) { wheel(-.4); wheel(.4); } else wheel(-vis); // rodas do lado escondido ficam atrás do corpo
       const r = box(o.l, nz, ze, hb, col, .8), w = r.w * r.a.s, x0 = r.a.x - w / 2, hh = r.ya - r.ta;
