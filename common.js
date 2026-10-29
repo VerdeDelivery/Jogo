@@ -24,5 +24,6 @@ export const WK = 100000; // campo wkt = semana * 100000 + tempo da semana (perm
 // Divisão do trabalho quando preenchido:
 //   BANCO 1 (principal): contas/Auth, ranking, profiles, bans, live (skins, enquetes, telão), players.
 //   BANCO 2 (social):    presença online (heartbeat a cada ~50 s) e todo o multijogador (mp_lobby, mp_rooms, mp_invites).
-export const CFG2 = { apiKey:'AIzaSyBhxmQmWmrxtGXL0QnLAv0Lng52Rd22_vY', authDomain:'recomeco-261eb.firebaseapp.com', projectId:'recomeco-261eb', storageBucket:'recomeco-261eb.firebasestorage.app', messagingSenderId:'908580603138', appId:'1:908580603138:web:bc1e1dba49efa7b6396e1b' };
-// BANCO 2: recomeco-261eb — conteúdo publicado pelo painel (skins, banners, fotos, avisos, manutenção, arrecadações, verificados, telão) e presença.
+// Conteúdo/Online e Skins agora dividem o MESMO projeto Firebase (skin-4f7da). Regras: firestore-conteudo-e-skins.rules
+export const CFG2 = { apiKey:'AIzaSyCgFYmJlHaxPfpvnrOxVI0YjvwJMsWLBaE', authDomain:'skin-4f7da.firebaseapp.com', projectId:'skin-4f7da', storageBucket:'skin-4f7da.firebasestorage.app', messagingSenderId:'147966450703', appId:'1:147966450703:web:cb4083b37acf5a45c0577a' };
+// BANCO 2: skin-4f7da (compartilhado com as skins) — conteúdo publicado pelo painel (skins, banners, fotos, avisos, manutenção, arrecadações, verificados, telão) e presença.
