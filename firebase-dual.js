@@ -3,6 +3,7 @@
 //   bans/{uid}     -> contas bloqueadas                                 live/{meta,verified} -> skins, avatares, banners, verificados
 // (nome do arquivo mantido por compatibilidade com o app.js)
 import { CFG, CFG2, FB_BASE as G, lcOf, periodNow, WK } from './common.js';
+import { SR } from './shield.js?v=1';
 let H = null;
 async function init() {
   if (H) return H;
@@ -45,6 +46,15 @@ const cacheGet = uid => { try { return JSON.parse(localStorage.getItem('sr_prof_
 const cacheSet = (uid, p) => { try { localStorage.setItem('sr_prof_' + uid, JSON.stringify({ avatar:p.avatar, banner:p.banner, photo:p.photo })); } catch (_) {} };
 const jparse = (s, d) => { try { const v = JSON.parse(s); return v && typeof v === 'object' ? v : d; } catch (_) { return d; } };
 let lastBeat = 0, verCache = null, verAt = 0;
+// ---- ANTI-CHEAT (servidor): início da corrida no relógio do SERVIDOR + relatórios do shield ----
+// runs/{uid}.startedAt = serverTimestamp. As regras só aceitam tempo no ranking <= (agora - startedAt) + folga.
+let runStartP = Promise.resolve();
+async function sendFlag(h, u) {
+  const rep = SR.takeReport(); if (!rep || !u) return;
+  const { Fs, db } = h;
+  try { await Fs.setDoc(Fs.doc(db, 'flags', u.uid), { codes:Fs.arrayUnion(...rep.codes.slice(0, 20)), ua:rep.ua, n:Fs.increment(1), last:Fs.serverTimestamp() }, { merge:true }); }
+  catch (e) { console.warn('flag:', code(e)); }
+}
 
 // Conteúdo publicado pelo painel (live/*): lê do BANCO 2 primeiro (leitura pública, alivia o Banco 1); se não houver, cai no Banco 1.
 async function getLive(h, name) {
@@ -91,7 +101,7 @@ async function syncLegacy(h, u, name) {
     if (e && lt <= (e.t || 0) && ls <= (e.s || 0)) return;
     if (e) await Fs.updateDoc(rref, { t:Math.max(e.t || 0, lt), s:Math.max(e.s || 0, ls), name:String(e.name || name || '').slice(0, 14), u:Fs.serverTimestamp() });
     else { const o = cacheGet(u.uid); await Fs.setDoc(rref, { name:String(name || u.displayName || x.name || '').slice(0, 14), avatar:String(o.avatar ?? '0'), banner:o.banner || '', photo:o.photo || '', t:lt, s:ls, wk:0, wt:0, wkt:0, u:Fs.serverTimestamp() }); }
-  } catch (e) { legacyDone[u.uid] = 0; console.warn('legado:', code(e)); }
+  } catch (e) { if (!/permission-denied/i.test(code(e))) legacyDone[u.uid] = 0; console.warn('legado:', code(e)); }
 }
 async function isBanned(h, uid) { try { return (await h.Fs.getDoc(h.Fs.doc(h.db, 'bans', uid))).exists(); } catch (_) { return false; } }
 
@@ -287,7 +297,14 @@ export async function fbApi(path, method, body) {
       cacheSet(u.uid, p);
       return out(200, { ok:true, account:{ ...pub(u.uid, p), provider:prov } });
     }
+    if (path === '/api/game/run') { // início de corrida: marca o relógio do servidor
+      runStartP = (async () => { try { await Fs.setDoc(Fs.doc(db, 'runs', u.uid), { startedAt:Fs.serverTimestamp() }); } catch (e) { console.warn('run:', code(e)); } })();
+      sendFlag(h, u);
+      return out(200, { ok:true });
+    }
+    if (path === '/api/game/flag') { await sendFlag(h, u); return out(200, { ok:true }); }
     if (path === '/api/game/heartbeat') {
+      sendFlag(h, u);
       if (now - lastBeat > 50000) {
         lastBeat = now;
         if (!legacyDone[u.uid]) syncLegacy(h, u, u.displayName || '');
@@ -305,6 +322,8 @@ export async function fbApi(path, method, body) {
       if (!(sc >= 0 && sc <= 1e8 && t >= 0 && t < 86400)) return err(400, 'Resultado inválido.');
       if (await isBanned(h, u.uid)) return err(403, 'Esta conta foi bloqueada neste jogo.');
       if (t < 1) return out(200, { ok:true });
+      if (SR.blocked) { sendFlag(h, u); return out(200, { ok:true, ignored:true }); }
+      await Promise.race([runStartP, new Promise(r => setTimeout(r, 4000))]);
       const P = periodNow(), o = cacheGet(u.uid), name = (u.displayName || '').slice(0, 14);
       try {
         const e = (await Fs.getDoc(rref)).data() || {};

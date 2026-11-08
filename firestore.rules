@@ -24,6 +24,37 @@ service cloud.firestore {
             && request.resource.data.wt < 86400);
     }
 
+    // ======================= ANTI-CHEAT (servidor) =======================
+    // Mude para true SOMENTE enquanto estiver migrando contas do jogo antigo
+    // (permite o ranking receber tempo que não veio de uma corrida). Depois volte para false.
+    function legacyOpen() { return false; }
+
+    // Relógio do SERVIDOR: runs/{uid}.startedAt é gravado com serverTimestamp quando a corrida começa.
+    function runElapsedMs(uid) {
+      return request.time.toMillis()
+        - get(/databases/$(database)/documents/runs/$(uid)).data.startedAt.toMillis();
+    }
+
+    // O tempo (segundos) nunca pode ser maior que o tempo REAL desde o início da corrida (+5 s de folga).
+    // Isso anula speed-hack: 1000x de velocidade não consegue "fabricar" tempo.
+    function timeOk(uid, secs) {
+      return legacyOpen()
+        || (exists(/databases/$(database)/documents/runs/$(uid))
+            && secs * 1000 <= runElapsedMs(uid) + 5000);
+    }
+
+    // wk (semana) não pode estar no futuro; wkt precisa bater com wk * 100000 + wt;
+    // pontos (s) com teto. Impede "inventar" posição no ranking semanal.
+    function rankShapeOk() {
+      let d = request.resource.data;
+      return (!('wkt' in d)
+              || (d.wk is int && d.wt is int && d.wkt is int
+                  && d.wk >= 0 && d.wt >= 0 && d.wt < 86400
+                  && d.wkt == d.wk * 100000 + d.wt
+                  && d.wk * 604800000 <= request.time.toMillis()))
+          && (!('s' in d) || (d.s is int && d.s >= 0 && d.s <= 100000000));
+    }
+
     match /ranking/{uid} {
       allow read: if true;
 
@@ -38,6 +69,9 @@ service cloud.firestore {
           && request.resource.data.name is string
           && request.resource.data.name.size() <= 14
           && validWt()
+          && rankShapeOk()
+          && (request.resource.data.t == 0 || timeOk(uid, request.resource.data.t))
+          && (request.resource.data.get('wt', 0) == 0 || timeOk(uid, request.resource.data.get('wt', 0)))
         );
 
       allow update: if isAdmin()
@@ -52,6 +86,11 @@ service cloud.firestore {
           && request.resource.data.name.size() <= 14
           && request.resource.data.t >= resource.data.t
           && validWt()
+          && rankShapeOk()
+          && (request.resource.data.t == resource.data.t
+              || timeOk(uid, request.resource.data.t))
+          && (request.resource.data.get('wt', 0) == resource.data.get('wt', 0)
+              || timeOk(uid, request.resource.data.get('wt', 0)))
         );
 
       allow delete: if false;
@@ -110,7 +149,8 @@ service cloud.firestore {
 
       allow update: if isAdmin()
         || (
-          request.auth != null
+          legacyOpen()
+          && request.auth != null
           && request.auth.uid == uid
           && !isBanned(uid)
           && request.resource.data.name == resource.data.name
@@ -132,6 +172,38 @@ service cloud.firestore {
         && request.auth.uid == uid
         && !isBanned(uid)
         && request.resource.data.frames_json.size() < 200000;
+    }
+
+    // Início da corrida (relógio do servidor). Só o dono grava; no máximo 1 vez por segundo.
+    match /runs/{uid} {
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && !isBanned(uid)
+        && request.resource.data.keys().hasOnly(['startedAt'])
+        && request.resource.data.startedAt == request.time;
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && !isBanned(uid)
+        && request.resource.data.keys().hasOnly(['startedAt'])
+        && request.resource.data.startedAt == request.time
+        && request.time > resource.data.startedAt + duration.value(1, 's');
+      allow delete: if false;
+    }
+
+    // Relatórios do shield do navegador (cheat detectado). Só o admin lê.
+    match /flags/{uid} {
+      allow read: if isAdmin();
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['codes', 'ua', 'n', 'last'])
+        && request.resource.data.codes is list
+        && request.resource.data.codes.size() <= 80
+        && request.resource.data.ua is string
+        && request.resource.data.ua.size() <= 160
+        && request.resource.data.n is int
+        && request.resource.data.n <= 100000;
+      allow delete: if isAdmin();
     }
 
     match /bans/{uid} {

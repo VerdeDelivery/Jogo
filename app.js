@@ -1,7 +1,9 @@
+import { SR } from './shield.js?v=1';
 import { LocalDB } from './database.js';
 import { fbApi } from './firebase-dual.js';
 import { periodNow, fmtDateTime } from './common.js';
 import { joinFsRoom } from './multiplayer.js';
+SR.checkModuleUrl(import.meta.url);
 await LocalDB.open();
 await LocalDB.hydrate(['subwayrun_rio_v4','rio_live_rank2','rio_global_rank2','sr_music_cfg','sr_music_mine']);
 // Conteúdo publicado no painel (live/meta e live/verified). O jogo já lê estes caches; se a rede demorar, segue com o último salvo.
@@ -95,6 +97,7 @@ function startCloudPresence() {
   cloudHeartbeat(); CLOUD.timer = setInterval(cloudHeartbeat, 25000);
 }
 async function saveCloudRun(data) {
+  if (SR.blocked) { try { SR.flag('submit-blocked', 0); } catch (_) {} await api('/api/game/flag', 'POST', {}); return; }
   if (!(typeof ACC !== 'undefined' && ACC && ACC.online)) return;
   await api('/api/game/score', 'POST', data);
 }
@@ -963,7 +966,7 @@ function startGame(isMatch = false) {
     showMapCutscene(() => { window.__srCutsceneDone = true; startGame(false); window.__srCutsceneDone = false; });
     return;
   }
-  if (LC.maint) { alert(LC.maintMsg || 'Jogo em manutenção. Volte já!'); return; } if (!isMatch) { MATCH.active=false; MATCH.started=false; } if (CFG.autoFS) goFS(); window.focus(); reset(); if(isMatch){const self=MATCH.room&&MATCH.room.players.find(p=>p.id===MATCH.id);if(self&&Number.isFinite(self.lane)){pl.lane=self.lane;pl.px=self.lane;}} MATCH.frames=[]; MATCH.frameAt=0; MATCH.startedAt=performance.now(); if (isMatch) MATCH.progressAt=0; msgTxt = 'Use as teclas ou deslize na tela'; msgT = 4; st = 'play'; prev = 'play'; ov.classList.add('off'); $('#pauseBtn').style.visibility = 'visible'; tLast = performance.now(); last = tLast; hud(); startMusic(); }
+  if (LC.maint) { alert(LC.maintMsg || 'Jogo em manutenção. Volte já!'); return; } if (!isMatch) { MATCH.active=false; MATCH.started=false; } if (CFG.autoFS) goFS(); window.focus(); reset(); try { if (typeof ACC !== 'undefined' && ACC && ACC.online) fbApi('/api/game/run', 'POST', {}); } catch (_) {} if(isMatch){const self=MATCH.room&&MATCH.room.players.find(p=>p.id===MATCH.id);if(self&&Number.isFinite(self.lane)){pl.lane=self.lane;pl.px=self.lane;}} MATCH.frames=[]; MATCH.frameAt=0; MATCH.startedAt=performance.now(); if (isMatch) MATCH.progressAt=0; msgTxt = 'Use as teclas ou deslize na tela'; msgT = 4; st = 'play'; prev = 'play'; ov.classList.add('off'); $('#pauseBtn').style.visibility = 'visible'; tLast = performance.now(); last = tLast; hud(); startMusic(); }
 function pauseGame() { if (st !== 'play') return; if (MATCH.active) { msgTxt='PARTIDA MULTIJOGADOR: NÃO É POSSÍVEL PAUSAR'; msgT=2; return; } st = 'pause'; prev = 'pause'; stopMusic(); screen('pause'); }
 function resume() { if (LC.maint) { alert(LC.maintMsg || 'Jogo em manutenção. Volte já!'); screen('title'); return; } st = 'play'; prev = 'play'; ov.classList.add('off'); $('#pauseBtn').style.visibility = 'visible'; tLast = last = performance.now(); startMusic(); }
 function crash(title) {
@@ -2489,6 +2492,7 @@ function drawDeath() {
 let fpsN = 0, fpsT = 0;
 function loop(now) {
   const real = now - last; last = now;
+  SR.tick({ speed, speedMax: LC.speedMax, coinMul: LC.coinMul, coinMulMax: 20 });
 
   if (real > 0 && real < 1000) { fpsN++; fpsT += real; if (fpsT >= 500) { const fe = $('#fps'); if (fe && CFG.fps.show) fe.textContent = Math.round(fpsN * 1000 / fpsT) + ' FPS'; fpsN = 0; fpsT = 0; } }
   if (st === 'play') update(Math.max(0, Math.min(.05, real / 1000)), Math.max(0, real));
@@ -2712,5 +2716,5 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && !MA
   const poll = async () => { try { const r = await fbApi('/api/telao', 'GET'); if (r && r.data && !r.down) render(r.data); } catch (_) {} };
   poll(); setInterval(poll, 10000);
 })();
-coins = 0; dist = 0; reset(); screen('title'); hudPlace(); requestAnimationFrame(loop);
+coins = 0; dist = 0; reset(); screen('title'); hudPlace(); SR.watch({ stumble, draw, step, update, crash, loop }); SR.onBlock(() => { try { msgTxt = 'MODO VERIFICAÇÃO: esta corrida não vale para o ranking'; msgT = 6; } catch (_) {} }); requestAnimationFrame(loop);
 reconcileSession().catch(() => {}).then(() => { if (st === 'title') screen('title'); startCloudPresence(); ensureMultiplayerSocket(); });
