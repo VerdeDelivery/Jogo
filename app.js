@@ -1,6 +1,6 @@
 import { SR } from './shield.js?v=2';
 import { LocalDB } from './database.js';
-import { fbApi } from './firebase-dual.js';
+import { fbApi } from './firebase-dual.js?v=15';
 import { periodNow, fmtDateTime } from './common.js';
 import { joinFsRoom } from './multiplayer.js';
 SR.checkModuleUrl(import.meta.url);
@@ -370,7 +370,7 @@ function drawAccount() {
     + `<h2>Escolha seu avatar</h2><div class="avgrid">${ids.map(i => `<button type="button" class="avb ${String(d.avatar) === String(i) ? 'on' : ''}${avLocked(i) ? ' lock' : ''}" data-av="${i}" aria-label="Avatar ${i === 'g' ? 'Google' : String(i).startsWith('c_') ? 'especial' : +i + 1}">${avatarHTML({ avatar: i, photo: d.photo }, 44)}</button>`).join('')}</div>`
     + (CUSTOM_BN.length ? `<h2>Banner do nome</h2><div class="bngrid"><button type="button" class="bnb ${d.banner ? '' : 'on'}" data-bn="" style="background:#101330">Nenhum</button>${CUSTOM_BN.map(b => `<button type="button" class="bnb ${d.banner === b.id ? 'on' : ''}${canUse(b, d.uid) ? '' : ' lock'}" data-bn="${esc(b.id)}" style="${bnStyle(b.id)}">${esc(b.n || 'Banner')}</button>`).join('')}</div>` : '')
     + `<div class="msg" id="aMsg"></div><button class="btn" id="aSave" type="button">${accEdit ? 'SALVAR' : 'CRIAR CONTA'}</button>`
-    + (accEdit ? `<button class="btn g" id="aCancel" type="button">CANCELAR</button><button class="btn g" id="aOut" type="button">SAIR DA CONTA</button>` : (Object.keys(ACCTS).length ? `<button class="lnk" id="aToLogin" type="button">Já tenho conta · ENTRAR</button>` : '') + `<button class="btn g" id="aBack" type="button">VOLTAR</button>`);
+    + (accEdit ? `<button class="btn g" id="aCancel" type="button">CANCELAR</button><button class="btn g" id="aOut" type="button">SAIR DA CONTA</button>` : `<button class="lnk" id="aToLogin" type="button">Já tenho conta · ENTRAR</button>` + `<button class="btn g" id="aBack" type="button">VOLTAR</button>`);
   if ($('#aBack')) $('#aBack').onclick = () => { accDraft = null; screen('title'); };
   if ($('#aToLogin')) $('#aToLogin').onclick = () => { accDraft = null; screen('login'); };
   card.querySelectorAll('#aName,#aPw,#aPw2').forEach(i => i.onkeydown = e => { if (e.key === 'Enter') $('#aSave').click(); });
@@ -378,7 +378,7 @@ function drawAccount() {
   $('#aName').oninput = () => { $('#bnPvN').textContent = $('#aName').value || 'Seu nome'; };
   card.querySelectorAll('[data-bn]').forEach(b => b.onclick = () => { const id = b.dataset.bn, it = bnFind(id); if (it && !canUse(it, d.uid)) return setMsg('#aMsg', '🔒 Banner exclusivo: só para quem foi liberado.', 0); d.name = $('#aName').value; d.banner = id; drawAccount(); });
   card.querySelectorAll('[data-av]').forEach(b => b.onclick = () => { d.name = $('#aName').value; const v = avParse(b.dataset.av); if (avLocked(v)) return setMsg('#aMsg', '🔒 Avatar exclusivo: só para quem foi liberado.', 0); d.avatar = v; drawAccount(); });
-  $('#aSave').onclick = async () => {
+  const saveGo = async () => {
     const name = $('#aName').value.trim().replace(/\s+/g, ' ');
     if (!/^[\p{L}\p{N}_ .-]{3,14}$/u.test(name)) return setMsg('#aMsg', 'Nome de usuário: de 3 a 14 caracteres (letras, números, espaço, _ . -).', 0);
     const clash = ACCTS[acctKey(name)]; if (clash && clash.uid !== d.uid && !(ACC && clash.uid === ACC.uid)) return setMsg('#aMsg', 'Esse nome de usuário já existe neste aparelho. Escolha outro ou toque em “Já tenho conta”.', 0);
@@ -416,6 +416,10 @@ function drawAccount() {
     if (h) { ACC.salt = salt; ACC.h = h; }
     saveAcc(); save(); patchGR(); accDraft = null; accEdit = false; acctSync(); screen('title');
   };
+  let saving = false; // trava toque duplo: antes, o 2º toque tentava criar a mesma conta e dava "já está em uso"
+  $('#aSave').onclick = async () => { if (saving) return; saving = true; const bt = $('#aSave'), t0 = bt.textContent; bt.disabled = true; bt.textContent = 'AGUARDE…';
+    try { await saveGo(); } catch (e) { console.warn(e); setMsg('#aMsg', 'Algo deu errado. Toque de novo.', 0); }
+    finally { saving = false; if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = t0; } } };
   if ($('#aCancel')) $('#aCancel').onclick = () => { accDraft = null; accEdit = false; screen('title'); };
   if ($('#aOut')) $('#aOut').onclick = async () => {
     if (ACC && ACC.online) { await api('/api/auth/logout', 'POST'); setToken(''); }

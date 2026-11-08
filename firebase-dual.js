@@ -137,7 +137,12 @@ export async function fbApi(path, method, body) {
       if (pw.length < 6 || pw.length > 72) return err(400, 'A senha precisa ter entre 6 e 72 caracteres.');
       let cred; try { cred = await Au.createUserWithEmailAndPassword(auth, await emailOf(lcOf(name)), pw); }
       catch (e) {
-        if (e.code === 'auth/email-already-in-use') return err(409, 'Esse nome de usuário já está em uso.');
+        if (e.code === 'auth/email-already-in-use') { // conta já criada (ex.: toque duplo ou segunda tentativa): se a senha bate, é a mesma pessoa → entra direto
+          const lg = await fbApi('/api/auth/login', 'POST', { username:name, password:pw });
+          if (lg && lg.data && lg.data.ok) return lg;
+          if (lg && lg.status === 403) return lg;
+          return err(409, 'Esse nome de usuário já está em uso. Escolha outro ou toque em “Já tenho conta · ENTRAR”.');
+        }
         if (e.code === 'auth/operation-not-allowed') return err(503, 'O login por e-mail/senha está desativado no Firebase (Authentication → Método de login → E-mail/senha → Ativar).');
         if (e.code === 'auth/network-request-failed') return { down:true };
         return err(400, 'Não foi possível criar a conta (' + code(e) + ').');
