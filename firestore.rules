@@ -217,6 +217,16 @@ service cloud.firestore {
         );
 
       allow create, update, delete: if isAdmin();
+
+      // Banimento automático pelo shield: a conta só consegue banir A SI MESMA, uma vez; só o admin desfaz.
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['ownerUid', 'reason', 'codes', 'at', 'auto'])
+        && request.resource.data.ownerUid == uid
+        && request.resource.data.auto == true
+        && request.resource.data.reason == 'cheat-automatico'
+        && request.resource.data.codes is list
+        && request.resource.data.codes.size() <= 20;
     }
 
     match /admins/{d} {

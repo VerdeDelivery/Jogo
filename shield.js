@@ -27,7 +27,7 @@ const ALLOWED_SCRIPT_HOSTS = [
   'https://accounts.google.com', 'https://www.youtube.com', 'https://s.ytimg.com'
 ];
 
-const S = { score: 0, codes: Object.create(null), blocked: false, listeners: [], pending: null, lastWatch: 0, watched: null, boot: Date.now() };
+const S = { strong: 0, locked: false, score: 0, codes: Object.create(null), blocked: false, listeners: [], lockListeners: [], pending: null, lastWatch: 0, watched: null, boot: Date.now() };
 
 // ---------------------------------------------------------------- relógio nativo
 // Event.timeStamp vem direto do navegador (mesma escala do performance.now) e não passa por
@@ -54,12 +54,56 @@ function flag(code, weight = 1, detail = '') {
   if (S.codes[code]) return;                 // cada sinal conta uma vez
   S.codes[code] = { w: weight, d: String(detail).slice(0, 80), at: Date.now() };
   S.score += weight;
+  if (weight >= 3) S.strong++;
   S.pending = S.pending || { codes: [], ua: String(navigator.userAgent || '').slice(0, 120), at: Date.now() };
   S.pending.codes.push(code + (detail ? ':' + String(detail).slice(0, 40) : ''));
   if (!S.blocked && S.score >= LIMIT) {
     S.blocked = true;
     for (const fn of S.listeners) { try { fn(Object.keys(S.codes)); } catch (_) {} }
   }
+  // BANIMENTO AUTOMÁTICO: só com assinatura inequívoca de cheat (sinal forte) + pontuação acima do limite.
+  // Sinais fracos (ex.: extensão de privacidade mexendo em relógio) só bloqueiam o ranking, não banem.
+  if (!S.locked && S.strong >= 1 && S.score >= LIMIT) lockout();
+}
+
+// ---------------------------------------------------------------- BANIMENTO NO DISPOSITIVO
+const LOCK_KEY = 'sr_dev_ban';
+function persistLock(id) {
+  try { localStorage.setItem(LOCK_KEY, id); } catch (_) {}
+  try { document.cookie = LOCK_KEY + '=' + id + ';max-age=31536000;path=/;SameSite=Lax'; } catch (_) {}
+  try { const r = indexedDB.open('sr_sec', 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => { try { r.result.transaction('k', 'readwrite').objectStore('k').put(id, LOCK_KEY); } catch (_) {} }; } catch (_) {}
+}
+function readLock() {
+  try { const v = localStorage.getItem(LOCK_KEY); if (v) return v; } catch (_) {}
+  try { const m = document.cookie.match(new RegExp(LOCK_KEY + '=([^;]+)')); if (m) return m[1]; } catch (_) {}
+  return '';
+}
+function drawLock(id) {
+  const ID = 'sr-ban-screen';
+  const build = () => {
+    try {
+      // remove o jogo da tela (canvas, menus, HUD) e deixa só o aviso
+      for (const el of Array.from(D.body ? D.body.children : [])) if (el.id !== ID) el.remove();
+      if (D.getElementById(ID)) return;
+      const o = D.createElement('div'); o.id = ID;
+      o.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#0b0b10;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:system-ui,sans-serif;padding:24px;';
+      o.innerHTML = '<div style="font-size:64px">🚫</div><h1 style="margin:12px 0 6px;font-size:28px;color:#ff4d5e">DISPOSITIVO BANIDO</h1>'
+        + '<p style="max-width:420px;opacity:.85;line-height:1.5">Detectamos modificações não permitidas (cheat/hack) neste dispositivo.<br>O acesso ao jogo foi encerrado.</p>'
+        + '<p style="opacity:.5;font-size:12px;margin-top:18px">Código: ' + String(id).slice(0, 12) + '<br>Se foi engano, fale com o criador informando este código.</p>';
+      (D.body || D.documentElement).appendChild(o);
+    } catch (_) {}
+  };
+  build();
+  // se removerem o aviso ou o jogo reaparecer, desenha de novo
+  try { new MutationObserver(build).observe(D.documentElement, { childList: true, subtree: true }); } catch (_) {}
+  setInterval(build, 700);
+}
+function lockout() {
+  if (S.locked) return; S.locked = true;
+  const id = 'B' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+  persistLock(id);
+  for (const fn of S.lockListeners) { try { fn(Object.keys(S.codes)); } catch (_) {} }
+  if (D.body) drawLock(id); else D.addEventListener('DOMContentLoaded', () => drawLock(id));
 }
 
 // ---------------------------------------------------------------- 1) relógio blindado
@@ -121,7 +165,7 @@ function checkElement(el) {
     if (el.tagName === 'SCRIPT') { checkScriptNode(el); return; }
     if (el.id && BAD_ID.test(el.id)) { flag('menu-id', 3, el.id); return; }
     const st = el.style;
-    if (st && st.position === 'fixed' && parseInt(st.zIndex, 10) >= 2147483000) flag('overlay', 3, 'z-max');
+    if (st && st.position === 'fixed' && parseInt(st.zIndex, 10) >= 2147483000) flag('overlay', 1, 'z-max');
   } catch (_) {}
 }
 
@@ -211,6 +255,14 @@ function tick(info) {
 // ---------------------------------------------------------------- start
 function runScans() { scanGlobals(); scanDom(); scanNatives(); scanDrift(); scanWatched(); }
 
+const priorLock = readLock();
+if (priorLock) {
+  S.locked = true; S.blocked = true; S.score = 99; S.codes.device_ban = { w: 9, d: priorLock, at: Date.now() };
+  S.pending = { codes: ['device_ban:' + priorLock], ua: String(navigator.userAgent || '').slice(0, 120), at: Date.now() };
+  const go = () => drawLock(priorLock);
+  if (D.body) go(); else D.addEventListener('DOMContentLoaded', go);
+  await new Promise(() => {});          // top-level await: o app.js (que importa este arquivo) nunca começa
+}
 armClock();
 scanGlobals(); scanDom(); observeDom();
 checkModuleUrl(import.meta.url);
@@ -225,6 +277,8 @@ setTimeout(() => { if (!S.watched) flag('no-watch', 2); }, 9000);
 export const SR = {
   /** true quando a corrida/ranking deve ser bloqueado */
   get blocked() { return S.blocked; },
+  get locked() { return S.locked; },
+  onLock(fn) { if (typeof fn === 'function') { S.lockListeners.push(fn); if (S.locked) { try { fn(Object.keys(S.codes)); } catch (_) {} } } },
   get score() { return S.score; },
   codes() { return Object.keys(S.codes); },
   flag, watch, tick, checkModuleUrl,

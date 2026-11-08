@@ -49,7 +49,16 @@ let lastBeat = 0, verCache = null, verAt = 0;
 // ---- ANTI-CHEAT (servidor): início da corrida no relógio do SERVIDOR + relatórios do shield ----
 // runs/{uid}.startedAt = serverTimestamp. As regras só aceitam tempo no ranking <= (agora - startedAt) + folga.
 let runStartP = Promise.resolve();
+SR.onLock(async () => { try { const h = await init(); if (h.auth.currentUser) { await sendBan(h, h.auth.currentUser); await sendFlag(h, h.auth.currentUser); } } catch (_) {} });
+let banSent = false;
+async function sendBan(h, u) { // banimento automático da conta (shield detectou cheat inequívoco)
+  if (banSent || !u || !SR.locked) return;
+  const { Fs, db } = h;
+  try { await Fs.setDoc(Fs.doc(db, 'bans', u.uid), { ownerUid:u.uid, reason:'cheat-automatico', codes:SR.codes().slice(0, 20), at:Fs.serverTimestamp(), auto:true }); banSent = true; }
+  catch (e) { console.warn('ban:', code(e)); }
+}
 async function sendFlag(h, u) {
+  if (SR.locked) sendBan(h, u);
   const rep = SR.takeReport(); if (!rep || !u) return;
   const { Fs, db } = h;
   try { await Fs.setDoc(Fs.doc(db, 'flags', u.uid), { codes:Fs.arrayUnion(...rep.codes.slice(0, 20)), ua:rep.ua, n:Fs.increment(1), last:Fs.serverTimestamp() }, { merge:true }); }

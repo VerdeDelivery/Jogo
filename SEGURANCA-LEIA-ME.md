@@ -15,6 +15,14 @@
 | 4 | **Detecção + bloqueio da corrida** | `shield.js` | `__MOD__`, `GM_*`, menus flutuantes, `<script blob:>`, funções nativas trocadas, relógio fora de compasso, `app.js` reescrito (tripwires), velocidade/multiplicador de moeda impossíveis. Passou do limite → a corrida **não vale** para o ranking. |
 | 5 | **Relatórios** | coleção `flags/{uid}` | Cada tentativa fica registrada (códigos, navegador, contagem, data). Só você (admin) lê. |
 
+## Banimento automático (novo)
+Quando o shield vê uma **assinatura inequívoca** de cheat (ex.: `__MOD__`, menu do script, `<script blob:>`, `app.js` reescrito):
+- o site daquele aparelho vira uma tela **"DISPOSITIVO BANIDO"** (o jogo é removido e o aviso volta se apagarem);
+- o banimento fica salvo no aparelho (localStorage + cookie + IndexedDB): ao recarregar, o jogo **nem inicia**;
+- a conta logada é banida no servidor (`bans/{uid}`, `auto:true`). Só o admin desfaz: apague o documento em `bans`.
+Sinais fracos (ex.: extensão de privacidade mexendo em relógio) **não banem**: só bloqueiam o ranking, para evitar banir inocente.
+Limites: o aparelho pode ser "limpo" (limpar dados do site/outro navegador); aí vale o ban da conta e o `flags`.
+
 ## Como publicar (nessa ordem)
 1. **Firestore → Regras:** cole o `firestore.rules` e publique.
 2. Suba TODOS os arquivos do jogo (novos: `shield.js`, `boot.js`, `edgeone.json`; alterados: `index.html`, `app.js`, `firebase-dual.js`).
