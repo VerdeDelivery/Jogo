@@ -23,9 +23,20 @@ Quando o shield vê uma **assinatura inequívoca** de cheat (ex.: `__MOD__`, men
 Sinais fracos (ex.: extensão de privacidade mexendo em relógio) **não banem**: só bloqueiam o ranking, para evitar banir inocente.
 Limites: o aparelho pode ser "limpo" (limpar dados do site/outro navegador); aí vale o ban da conta e o `flags`.
 
+## v2 — Ban na hora, anti-inspeção, anti-clone (novo)
+- **Sem recarregar:** varredura a cada 0,4 s + eventos. Ao detectar, aparece "DISPOSITIVO BANIDO" e o jogo congela na hora.
+- **Inspeção (PC):** DevTools aberto (teste com `debugger`), F12, Ctrl+Shift+I/J/C/K, Ctrl+U (ver código), Ctrl+S, Cmd+Opt+I/J/U. Clique direito é bloqueado. A 1ª tentativa de atalho só avisa; a 2ª bane (`SHORTCUT_STRIKES` no topo do `shield.js`; ponha 1 para banir na primeira).
+- **Impressão digital do aparelho:** o ban é gravado em `deviceBans/{impressão}`. Trocar de conta, limpar dados ou **usar VPN não adianta** (o ban segue o aparelho, não o IP). Para desbanir: apague o documento em `deviceBans` e o da conta em `bans` (procure pelo "Código" que aparece na tela do jogador, campo `code`).
+- **Anti-clone / golpe:** o jogo só roda em `ALLOWED_HOSTS` (topo do `shield.js`). Em site copiado aparece "SITE NÃO OFICIAL". **Edite essa lista com todos os seus domínios**, senão o jogo trava neles.
+- **Chave do dono:** abra UMA vez `https://SEU-SITE/#dono=SUA_CHAVE` no seu aparelho. Daí em diante você usa F12/inspecionar sem ser banido. Guarde a chave em segredo (o zip só tem o hash dela).
+- **Cache:** `shield.js` agora é `?v=2` e `app.js` `?v=14`. Sempre que alterar um arquivo, aumente o número, senão celulares/CDN usam a versão velha.
+- **VPN:** o navegador não consegue saber se alguém usa VPN (e banir todo mundo que usa VPN pegaria muito inocente). O que funciona é banir o aparelho.
+- **Ver código-fonte:** impossível impedir de verdade (o navegador precisa baixar o código para rodar). O que fazemos é bloquear os atalhos, banir quem abre o DevTools e tornar o código inútil para clonar (domínio travado + servidor validando).
+- **Recomendado depois:** Firebase **App Check** (reCAPTCHA) para o servidor recusar sites/robôs clonados.
+
 ## Como publicar (nessa ordem)
 1. **Firestore → Regras:** cole o `firestore.rules` e publique.
-2. Suba TODOS os arquivos do jogo (novos: `shield.js`, `boot.js`, `edgeone.json`; alterados: `index.html`, `app.js`, `firebase-dual.js`).
+2. Suba TODOS os arquivos do jogo (novos: `shield.js`, `boot.js`, `edgeone.json`; alterados: `index.html`, `app.js`, `firebase-dual.js`) e depois force atualizar no celular (limpar cache do site).
 3. Teste: crie uma conta, jogue uma corrida com tempo > 1 s e veja se o ranking salva. Depois olhe no Firestore se apareceu `runs/{uid}`.
 4. Cheats detectados aparecem em **Firestore → `flags`**. Para punir, crie `bans/{uid}` (como já faz hoje).
 

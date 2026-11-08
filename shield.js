@@ -1,174 +1,205 @@
 // ============================================================================
-//  SUBWAY RUN — SHIELD v1  (camada anti-cheat do navegador)
+//  SUBWAY RUN — SHIELD v2  (anti-cheat + anti-cópia do navegador)
 //
 //  Carregado ANTES de tudo (index.html + primeiro import do app.js).
-//  O que faz:
-//   1) RELÓGIO BLINDADO: troca performance.now / requestAnimationFrame por versões
-//      baseadas em um relógio que scripts de página não conseguem alterar
-//      (Event.timeStamp) e TRAVA as duas (não-graváveis, não-configuráveis).
-//      => derruba o "Speed 1000x" do Tampermonkey e qualquer hack de velocidade colado no console.
-//   2) DETECÇÃO: assinaturas de cheats (__MOD__, GM_*, menus flutuantes, <script blob:>,
-//      scripts de origem estranha, funções nativas trocadas, relógio fora de ritmo).
-//   3) TRIPWIRES: vigia o código das funções-chave do jogo (stumble/draw/step/...) e
-//      detecta quando alguém reescreveu o app.js em memória (o método do script).
-//   4) BLOQUEIO: quando a pontuação de suspeita passa do limite, a corrida NÃO vale para o
-//      ranking e um relatório vai para a coleção "flags" (você vê no Firebase / painel).
-//
-//  IMPORTANTE: nenhuma proteção do navegador é 100% — o usuário controla o navegador.
-//  A proteção "de verdade" fica no servidor (firestore.rules: tempo do ranking limitado
-//  pelo relógio do SERVIDOR). Este arquivo aumenta MUITO o custo de burlar e gera provas.
+//   1) RELÓGIO BLINDADO: performance.now / requestAnimationFrame travados em relógio nativo.
+//   2) DETECÇÃO IMEDIATA (a cada 0,4 s + eventos, sem recarregar): assinaturas de cheat,
+//      DevTools aberto, atalhos de inspeção (F12, Ctrl+U/S/Shift+I/J/C…), funções nativas trocadas,
+//      app.js reescrito.
+//   3) BANIMENTO NA HORA: tela "DISPOSITIVO BANIDO" + jogo congelado, sem precisar recarregar.
+//      Ban gravado no aparelho (3 lugares), na CONTA (bans/) e na IMPRESSÃO DIGITAL do aparelho
+//      (deviceBans/) — por isso trocar de conta, limpar dados ou usar VPN não adianta.
+//   4) TRAVA DE DOMÍNIO: o jogo só roda nos sites oficiais (anti-clone).
+//   5) CHAVE DO DONO: o dono testa sem ser banido (veja SEGURANCA-LEIA-ME.md).
 // ============================================================================
 
 const W = window, D = document;
-const LIMIT = 3;                      // pontuação de suspeita que bloqueia a corrida
+
+// ===== CONFIGURAÇÃO (edite aqui) =====
+const OFFICIAL_URL = 'https://sub-run.edgeone.dev';
+const ALLOWED_HOSTS = ['sub-run.edgeone.dev', 'sub-run-v2-0.edgeone.dev', 'localhost'];   // <- ponha TODOS os seus sites
+const OWNER_HASH = '2de3bcc08f8c83f69e1407e4562c3a883435547699c2b7ce7826b969a3e9a72c';          // sha256 da chave do dono ('' desliga)
+const SHORTCUT_STRIKES = 2;                   // tentativas de F12/Ctrl+U… antes do ban (1 = ban na primeira)
+const LIMIT = 3;                              // pontuação de suspeita que bloqueia a corrida
+// =====================================
+
 const SELF_ORIGIN = location.origin;
 const ALLOWED_SCRIPT_HOSTS = [
   'https://www.gstatic.com', 'https://apis.google.com', 'https://www.google.com',
   'https://accounts.google.com', 'https://www.youtube.com', 'https://s.ytimg.com'
 ];
+const S = { owner: false, strong: 0, clockStrong: 0, locked: false, banId: '', score: 0, codes: Object.create(null), blocked: false,
+  listeners: [], lockListeners: [], pending: null, watched: null, strikes: 0, boot: Date.now() };
 
-const S = { strong: 0, locked: false, score: 0, codes: Object.create(null), blocked: false, listeners: [], lockListeners: [], pending: null, lastWatch: 0, watched: null, boot: Date.now() };
+const NATIVE_NOW = () => new Event('t').timeStamp;       // relógio que nenhum script de página altera
+const enc = new TextEncoder();
+async function sha256hex(t) { const b = await crypto.subtle.digest('SHA-256', enc.encode(t)); return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join(''); }
 
-// ---------------------------------------------------------------- relógio nativo
-// Event.timeStamp vem direto do navegador (mesma escala do performance.now) e não passa por
-// nenhuma função JavaScript que um userscript possa ter substituído.
-const NATIVE_NOW = () => new Event('t').timeStamp;
+// ---------------------------------------------------------------- tela cheia (ban / site não oficial)
+function drawScreen(id, html) {
+  const build = () => {
+    try {
+      for (const el of Array.from(D.body ? D.body.children : [])) if (el.id !== id) el.remove();
+      if (D.getElementById(id)) return;
+      const o = D.createElement('div'); o.id = id;
+      o.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#0b0b10;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:system-ui,sans-serif;padding:24px;';
+      o.innerHTML = html;
+      (D.body || D.documentElement).appendChild(o);
+    } catch (_) {}
+  };
+  const go = () => { build(); try { new MutationObserver(build).observe(D.documentElement, { childList: true, subtree: true }); } catch (_) {} setInterval(build, 500); };
+  if (D.body) go(); else D.addEventListener('DOMContentLoaded', go);
+}
+const banHtml = id => '<div style="font-size:64px">🚫</div><h1 style="margin:12px 0 6px;font-size:28px;color:#ff4d5e">DISPOSITIVO BANIDO</h1>'
+  + '<p style="max-width:420px;opacity:.85;line-height:1.5">Detectamos modificações ou tentativa de inspeção não permitidas neste dispositivo.<br>O acesso ao jogo foi encerrado.</p>'
+  + '<p style="opacity:.5;font-size:12px;margin-top:18px">Código: ' + String(id).slice(0, 14) + '<br>Se foi engano, fale com o criador informando este código.</p>';
 
-// ---------------------------------------------------------------- toString "puro"
-let FTS = Function.prototype.toString;
-let pristineRealm = null;
+// ---------------------------------------------------------------- CHAVE DO DONO
 try {
-  const fr = D.createElement('iframe');
-  fr.setAttribute('aria-hidden', 'true'); fr.tabIndex = -1;
-  fr.style.cssText = 'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none;left:-9999px';
-  (D.documentElement || D.head || D).appendChild(fr);
-  pristineRealm = fr.contentWindow;
-  if (pristineRealm && pristineRealm.Function) FTS = pristineRealm.Function.prototype.toString;
-} catch (_) { /* sem iframe: segue com o toString local */ }
+  const m = location.hash.match(/dono=([A-Za-z0-9]{16,64})/);
+  if (m) { localStorage.setItem('sr_own', m[1]); history.replaceState(null, '', location.pathname + location.search); }
+  const k = localStorage.getItem('sr_own');
+  if (k && OWNER_HASH && (await sha256hex(k)) === OWNER_HASH) S.owner = true;
+} catch (_) {}
 
-const isNative = fn => { try { return typeof fn === 'function' && /\{\s*\[native code\]\s*\}\s*$/.test(FTS.call(fn)); } catch (_) { return false; } };
-const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+// ---------------------------------------------------------------- TRAVA DE DOMÍNIO (anti-clone)
+if (!S.owner && !ALLOWED_HOSTS.includes(location.hostname)) {
+  drawScreen('sr-host-screen', '<div style="font-size:60px">⚠️</div><h1 style="margin:12px 0 6px;font-size:26px;color:#ffb020">SITE NÃO OFICIAL</h1>'
+    + '<p style="max-width:420px;opacity:.85;line-height:1.5">Este jogo só funciona no site oficial. Cuidado com cópias e golpes.</p>'
+    + '<a href="' + OFFICIAL_URL + '" style="margin-top:16px;color:#7dbdff;font-size:18px">' + OFFICIAL_URL.replace('https://', '') + '</a>');
+  await new Promise(() => {});
+}
 
-// ---------------------------------------------------------------- flag / bloqueio
+// ---------------------------------------------------------------- BAN NO APARELHO (3 lugares)
+const LOCK_KEY = 'sr_dev_ban';
+function persistLock(id) {
+  try { localStorage.setItem(LOCK_KEY, id); } catch (_) {}
+  try { D.cookie = LOCK_KEY + '=' + id + ';max-age=31536000;path=/;SameSite=Lax'; } catch (_) {}
+  try { const r = indexedDB.open('sr_sec', 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => { try { r.result.transaction('k', 'readwrite').objectStore('k').put(id, LOCK_KEY); } catch (_) {} }; } catch (_) {}
+}
+function readLockSync() {
+  try { const v = localStorage.getItem(LOCK_KEY); if (v) return v; } catch (_) {}
+  try { const m = D.cookie.match(new RegExp(LOCK_KEY + '=([^;]+)')); if (m) return m[1]; } catch (_) {}
+  return '';
+}
+function readLockIDB() {
+  return new Promise(res => {
+    try {
+      const r = indexedDB.open('sr_sec', 1); r.onupgradeneeded = () => r.result.createObjectStore('k');
+      r.onsuccess = () => { try { const q = r.result.transaction('k').objectStore('k').get(LOCK_KEY); q.onsuccess = () => res(q.result || ''); q.onerror = () => res(''); } catch (_) { res(''); } };
+      r.onerror = () => res('');
+      setTimeout(() => res(''), 1500);
+    } catch (_) { res(''); }
+  });
+}
+
+// ---------------------------------------------------------------- flag / bloqueio / ban
+const CLOCK_CODES = ['perf-own', 'perf-hook', 'raf-hook', 'date-hook', 'clock-drift', 'clock-lock-fail', 'clock-replaced', 'raf-replaced'];
 function flag(code, weight = 1, detail = '') {
-  if (S.codes[code]) return;                 // cada sinal conta uma vez
+  if (S.owner || S.codes[code]) return;
   S.codes[code] = { w: weight, d: String(detail).slice(0, 80), at: Date.now() };
   S.score += weight;
   if (weight >= 3) S.strong++;
+  // dois ou mais sinais de relógio adulterado = speed-hack (extensões legítimas raramente fazem os dois)
+  if (!S.clockStrong && CLOCK_CODES.filter(c => S.codes[c]).length >= 2) { S.clockStrong = 1; S.strong++; }
   S.pending = S.pending || { codes: [], ua: String(navigator.userAgent || '').slice(0, 120), at: Date.now() };
   S.pending.codes.push(code + (detail ? ':' + String(detail).slice(0, 40) : ''));
   if (!S.blocked && S.score >= LIMIT) {
     S.blocked = true;
     for (const fn of S.listeners) { try { fn(Object.keys(S.codes)); } catch (_) {} }
   }
-  // BANIMENTO AUTOMÁTICO: só com assinatura inequívoca de cheat (sinal forte) + pontuação acima do limite.
-  // Sinais fracos (ex.: extensão de privacidade mexendo em relógio) só bloqueiam o ranking, não banem.
   if (!S.locked && S.strong >= 1 && S.score >= LIMIT) lockout();
 }
 
-// ---------------------------------------------------------------- BANIMENTO NO DISPOSITIVO
-const LOCK_KEY = 'sr_dev_ban';
-function persistLock(id) {
-  try { localStorage.setItem(LOCK_KEY, id); } catch (_) {}
-  try { document.cookie = LOCK_KEY + '=' + id + ';max-age=31536000;path=/;SameSite=Lax'; } catch (_) {}
-  try { const r = indexedDB.open('sr_sec', 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => { try { r.result.transaction('k', 'readwrite').objectStore('k').put(id, LOCK_KEY); } catch (_) {} }; } catch (_) {}
-}
-function readLock() {
-  try { const v = localStorage.getItem(LOCK_KEY); if (v) return v; } catch (_) {}
-  try { const m = document.cookie.match(new RegExp(LOCK_KEY + '=([^;]+)')); if (m) return m[1]; } catch (_) {}
-  return '';
-}
-function drawLock(id) {
-  const ID = 'sr-ban-screen';
-  const build = () => {
-    try {
-      // remove o jogo da tela (canvas, menus, HUD) e deixa só o aviso
-      for (const el of Array.from(D.body ? D.body.children : [])) if (el.id !== ID) el.remove();
-      if (D.getElementById(ID)) return;
-      const o = D.createElement('div'); o.id = ID;
-      o.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#0b0b10;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:system-ui,sans-serif;padding:24px;';
-      o.innerHTML = '<div style="font-size:64px">🚫</div><h1 style="margin:12px 0 6px;font-size:28px;color:#ff4d5e">DISPOSITIVO BANIDO</h1>'
-        + '<p style="max-width:420px;opacity:.85;line-height:1.5">Detectamos modificações não permitidas (cheat/hack) neste dispositivo.<br>O acesso ao jogo foi encerrado.</p>'
-        + '<p style="opacity:.5;font-size:12px;margin-top:18px">Código: ' + String(id).slice(0, 12) + '<br>Se foi engano, fale com o criador informando este código.</p>';
-      (D.body || D.documentElement).appendChild(o);
-    } catch (_) {}
-  };
-  build();
-  // se removerem o aviso ou o jogo reaparecer, desenha de novo
-  try { new MutationObserver(build).observe(D.documentElement, { childList: true, subtree: true }); } catch (_) {}
-  setInterval(build, 700);
-}
-function lockout() {
-  if (S.locked) return; S.locked = true;
-  const id = 'B' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
-  persistLock(id);
+function lockout(fixedId) {
+  if (S.locked || S.owner) return; S.locked = true;
+  const id = fixedId || ('B' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase());
+  S.banId = id; persistLock(id);
+  try { W.stop(); } catch (_) {}
+  try { D.querySelectorAll('audio,video').forEach(m => { try { m.pause(); m.muted = true; } catch (_) {} }); } catch (_) {}
+  drawScreen('sr-ban-screen', banHtml(id));
   for (const fn of S.lockListeners) { try { fn(Object.keys(S.codes)); } catch (_) {} }
-  if (D.body) drawLock(id); else D.addEventListener('DOMContentLoaded', () => drawLock(id));
 }
+
+// ban já existente neste aparelho: trava na hora e o jogo nem começa
+if (!S.owner) {
+  let prior = readLockSync() || await readLockIDB();
+  if (prior) {
+    S.locked = true; S.blocked = true; S.score = 99; S.banId = prior; S.codes.device_ban = { w: 9, d: prior, at: Date.now() };
+    S.pending = { codes: ['device_ban:' + prior], ua: String(navigator.userAgent || '').slice(0, 120), at: Date.now() };
+    persistLock(prior);
+    drawScreen('sr-ban-screen', banHtml(prior));
+    await new Promise(() => {});
+  }
+}
+
+// ---------------------------------------------------------------- impressão digital do aparelho (resiste a VPN/troca de conta)
+let fpP = null;
+function fingerprint() {
+  return fpP || (fpP = (async () => {
+    try {
+      const p = [navigator.platform, navigator.hardwareConcurrency, navigator.deviceMemory, navigator.maxTouchPoints,
+        Math.max(screen.width, screen.height) + 'x' + Math.min(screen.width, screen.height) + 'x' + screen.colorDepth, W.devicePixelRatio];
+      try { const c = D.createElement('canvas'); c.width = 220; c.height = 40; const g = c.getContext('2d'); g.textBaseline = 'top'; g.font = '16px Arial'; g.fillStyle = '#f60'; g.fillRect(10, 5, 90, 25); g.fillStyle = '#069'; g.fillText('SubwayRun♥Rio 1.0', 4, 8); p.push(c.toDataURL().slice(-80)); } catch (_) {}
+      try { const gl = D.createElement('canvas').getContext('webgl'); const e = gl && gl.getExtension('WEBGL_debug_renderer_info'); if (e) p.push(gl.getParameter(e.UNMASKED_RENDERER_WEBGL), gl.getParameter(e.UNMASKED_VENDOR_WEBGL)); } catch (_) {}
+      return (await sha256hex(p.join('|'))).slice(0, 32);
+    } catch (_) { return ''; }
+  })());
+}
+fingerprint();
 
 // ---------------------------------------------------------------- 1) relógio blindado
-function lock(obj, key, value) {
-  try { Object.defineProperty(obj, key, { value, writable: false, configurable: false, enumerable: true }); return true; }
-  catch (_) { return false; }
-}
+let FTS = Function.prototype.toString;
+try {
+  const fr = D.createElement('iframe');
+  fr.setAttribute('aria-hidden', 'true'); fr.tabIndex = -1;
+  fr.style.cssText = 'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none;left:-9999px';
+  (D.documentElement || D.head || D).appendChild(fr);
+  if (fr.contentWindow && fr.contentWindow.Function) FTS = fr.contentWindow.Function.prototype.toString;
+} catch (_) {}
+const isNative = fn => { try { return typeof fn === 'function' && /\{\s*\[native code\]\s*\}\s*$/.test(FTS.call(fn)); } catch (_) { return false; } };
+const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+function lock(obj, key, value) { try { Object.defineProperty(obj, key, { value, writable: false, configurable: false, enumerable: true }); return true; } catch (_) { return false; } }
 
 function armClock() {
-  // detecta o estrago ANTES de consertar
   try {
     if (hasOwn(W.performance, 'now')) flag('perf-own', 2, 'performance.now');
     if (!isNative(W.performance.now)) flag('perf-hook', 2, 'performance.now');
     if (!isNative(W.requestAnimationFrame)) flag('raf-hook', 2, 'rAF');
     if (!isNative(W.Date.now)) flag('date-hook', 2, 'Date.now');
   } catch (_) {}
-
-  // relógio novo (não adulterável) + rAF que entrega SEMPRE o relógio novo
   const rawRAF = W.requestAnimationFrame;
   const safeNow = function now() { return NATIVE_NOW(); };
-  const safeRAF = function requestAnimationFrame(cb) { return rawRAF.call(W, () => cb(NATIVE_NOW())); };
-  const a = lock(W.performance, 'now', safeNow);
-  const b = lock(W, 'requestAnimationFrame', safeRAF);
+  const safeRAF = function requestAnimationFrame(cb) { if (S.locked) return 0; return rawRAF.call(W, () => { if (!S.locked) cb(NATIVE_NOW()); }); };
+  const a = lock(W.performance, 'now', safeNow), b = lock(W, 'requestAnimationFrame', safeRAF);
   if (!a || !b) flag('clock-lock-fail', 2);
   S.safeNow = safeNow; S.safeRAF = safeRAF;
 }
 
-// ---------------------------------------------------------------- 2) detecção de assinaturas
+// ---------------------------------------------------------------- 2) assinaturas
 const BAD_GLOBAL = /^(__MOD|__mod|modmenu|mod_?menu|__cheat|cheat|hack|GM_|GM$|unsafeWindow|Tampermonkey|violentmonkey|greasemonkey|__tm|__vm)/i;
 const BAD_ID = /(^|[-_])(mod|cheat|hack|trainer|speedhack)([-_]|$)|^sr-mod/i;
 const BAD_TEXT = /__MOD__|unsafeWindow|GM_info|==UserScript==|speedMul|noclip(Off)?\b/;
 
-function scanGlobals() {
-  try {
-    for (const k of Object.getOwnPropertyNames(W)) {
-      if (BAD_GLOBAL.test(k)) { flag('global', 3, k); return; }
-    }
-  } catch (_) {}
-}
-
+function scanGlobals() { try { for (const k of Object.getOwnPropertyNames(W)) if (BAD_GLOBAL.test(k)) { flag('global', 3, k); return; } } catch (_) {} }
 function checkScriptNode(s) {
   try {
     const src = s.src || '';
-    if (!src) {
-      const t = s.textContent || '';
-      if (BAD_TEXT.test(t)) flag('inline-cheat', 3);
-      return;
-    }
+    if (!src) { if (BAD_TEXT.test(s.textContent || '')) flag('inline-cheat', 3); return; }
     if (/^(blob|data):/i.test(src)) { flag('blob-script', 3, src.slice(0, 12)); return; }
     let origin = ''; try { origin = new URL(src, location.href).origin; } catch (_) {}
     if (origin !== SELF_ORIGIN && !ALLOWED_SCRIPT_HOSTS.includes(origin)) flag('foreign-script', 2, origin);
     if (s.type === 'javascript/blocked') flag('blocked-script', 3, 'swap');
   } catch (_) {}
 }
-
 function checkElement(el) {
   try {
-    if (!el || el.nodeType !== 1) return;
+    if (!el || el.nodeType !== 1 || el.id === 'sr-ban-screen' || el.id === 'sr-host-screen') return;
     if (el.tagName === 'SCRIPT') { checkScriptNode(el); return; }
     if (el.id && BAD_ID.test(el.id)) { flag('menu-id', 3, el.id); return; }
-    const st = el.style;
-    if (st && st.position === 'fixed' && parseInt(st.zIndex, 10) >= 2147483000) flag('overlay', 1, 'z-max');
+    const st = el.style; if (st && st.position === 'fixed' && parseInt(st.zIndex, 10) >= 2147483000) flag('overlay', 1, 'z-max');
   } catch (_) {}
 }
-
 function scanDom() {
   try {
     D.querySelectorAll('script').forEach(checkScriptNode);
@@ -176,20 +207,12 @@ function scanDom() {
     D.querySelectorAll('[id^="sr-mod"],[id*="cheat"],[id*="mod-menu"]').forEach(el => flag('menu-id', 3, el.id));
   } catch (_) {}
 }
-
 function observeDom() {
   try {
-    const mo = new MutationObserver(list => {
-      for (const m of list) for (const n of m.addedNodes) {
-        checkElement(n);
-        if (n.nodeType === 1 && n.querySelectorAll) n.querySelectorAll('script').forEach(checkScriptNode);
-      }
-    });
-    mo.observe(D.documentElement, { childList: true, subtree: true });
+    new MutationObserver(list => { for (const m of list) for (const n of m.addedNodes) { checkElement(n); if (n.nodeType === 1 && n.querySelectorAll) n.querySelectorAll('script').forEach(checkScriptNode); } })
+      .observe(D.documentElement, { childList: true, subtree: true });
   } catch (_) {}
 }
-
-// funções nativas que cheats costumam trocar
 function scanNatives() {
   try {
     if (!isNative(W.setTimeout)) flag('timeout-hook', 1);
@@ -202,29 +225,47 @@ function scanNatives() {
     if (Function.prototype.toString !== FTS && !isNative(Function.prototype.toString)) flag('tostring-hook', 2);
   } catch (_) {}
 }
-
-// relógio nativo x relógio do sistema: se andarem fora de compasso, alguém mexeu em tempo
 let drift = { ev: NATIVE_NOW(), dt: Date.now(), strikes: 0 };
 function scanDrift() {
-  const ev = NATIVE_NOW(), dt = Date.now();
-  const dEv = ev - drift.ev, dDt = dt - drift.dt;
-  drift.ev = ev; drift.dt = dt;
-  if (dDt < 1500 || dEv < 0) return;                       // janela curta demais
-  const ratio = dEv / dDt;
-  if (ratio < 0.7 || ratio > 1.4) {
-    if (++drift.strikes >= 3) flag('clock-drift', 2, ratio.toFixed(2));
-  } else drift.strikes = 0;
+  const ev = NATIVE_NOW(), dt = Date.now(), dEv = ev - drift.ev, dDt = dt - drift.dt;
+  if (dDt < 1500) return; drift.ev = ev; drift.dt = dt;
+  if (dEv < 0) return;
+  const r = dEv / dDt;
+  if (r < 0.7 || r > 1.4) { if (++drift.strikes >= 3) flag('clock-drift', 2, r.toFixed(2)); } else drift.strikes = 0;
 }
 D.addEventListener('visibilitychange', () => { drift.ev = NATIVE_NOW(); drift.dt = Date.now(); drift.strikes = 0; });
 
-// ---------------------------------------------------------------- 3) tripwires do código do jogo
-// O script do cheat REESCREVE o texto do app.js (regex em stumble / draw ...).
-// Depois da reescrita, String(função) passa a conter o código injetado.
-function watch(fns) {
-  S.watched = Object.assign(S.watched || {}, fns);
-  S.lastWatch = Date.now();
-  scanWatched();
+// ---------------------------------------------------------------- DevTools / inspeção (desktop)
+const DESKTOP = !('ontouchstart' in W) && !((navigator.maxTouchPoints || 0) > 0);
+function dbgProbe() { const t = NATIVE_NOW(); debugger; return NATIVE_NOW() - t; }   // com DevTools aberto, o "debugger" PAUSA
+let lastDev = 0, gapN = 0;
+function scanDevtools() {
+  if (!DESKTOP || S.owner) return;
+  const n = Date.now(); if (n - lastDev < 1000) return; lastDev = n;
+  try {
+    const gap = (W.outerWidth - W.innerWidth > 200) || (W.outerHeight - W.innerHeight > 260);
+    if (gap) { if (++gapN >= 3) flag('devtools-size', 1); } else gapN = 0;
+    if (dbgProbe() > 120) flag('devtools-open', 3);
+  } catch (_) {}
 }
+
+// atalhos de inspeção / salvar página: bloqueia e conta tentativas
+function toast(msg) {
+  try { const t = D.createElement('div'); t.textContent = msg; t.style.cssText = 'position:fixed;left:50%;top:18px;transform:translateX(-50%);z-index:2147483646;background:#b71c1c;color:#fff;padding:10px 16px;border-radius:10px;font:700 14px system-ui;box-shadow:0 6px 20px #0008';
+    (D.body || D.documentElement).appendChild(t); setTimeout(() => t.remove(), 3500); } catch (_) {}
+}
+W.addEventListener('keydown', e => {
+  if (S.owner) return;
+  const k = String(e.key || '').toLowerCase(), c = e.ctrlKey || e.metaKey, s = e.shiftKey;
+  const bad = e.key === 'F12' || (c && s && ['i', 'j', 'c', 'k', 'e'].includes(k)) || (c && !s && ['u', 's'].includes(k)) || (e.metaKey && e.altKey && ['i', 'j', 'u', 'c'].includes(k));
+  if (!bad) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (++S.strikes >= SHORTCUT_STRIKES) flag('shortcut', 3, k); else toast('Ação bloqueada. Tentar de novo resulta em banimento.');
+}, true);
+W.addEventListener('contextmenu', e => { if (!S.owner && !(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName))) e.preventDefault(); }, true);
+
+// ---------------------------------------------------------------- 3) tripwires do código do jogo
+function watch(fns) { S.watched = Object.assign(S.watched || {}, fns); scanWatched(); }
 function scanWatched() {
   const w = S.watched; if (!w) return;
   for (const k of Object.keys(w)) {
@@ -234,15 +275,7 @@ function scanWatched() {
     if (/\{\s*\[native code\]\s*\}\s*$/.test(src)) flag('fn-native-swap', 2, k);
   }
 }
-
-// o módulo do jogo precisa estar rodando da nossa origem (cheat injeta via blob:)
-function originOk(url) {
-  try { return String(url).startsWith(SELF_ORIGIN + '/'); } catch (_) { return false; }
-}
-function checkModuleUrl(url) { if (!originOk(url)) flag('foreign-module', 3, String(url).slice(0, 14)); }
-
-// ---------------------------------------------------------------- 4) leituras de estado do jogo (por frame)
-// speed/coin: limites muito acima do normal só existem com cheat.
+function checkModuleUrl(url) { try { if (!String(url).startsWith(SELF_ORIGIN + '/')) flag('foreign-module', 3, String(url).slice(0, 14)); } catch (_) { flag('foreign-module', 3); } }
 function tick(info) {
   try {
     if (!info) return;
@@ -253,40 +286,31 @@ function tick(info) {
 }
 
 // ---------------------------------------------------------------- start
-function runScans() { scanGlobals(); scanDom(); scanNatives(); scanDrift(); scanWatched(); }
-
-const priorLock = readLock();
-if (priorLock) {
-  S.locked = true; S.blocked = true; S.score = 99; S.codes.device_ban = { w: 9, d: priorLock, at: Date.now() };
-  S.pending = { codes: ['device_ban:' + priorLock], ua: String(navigator.userAgent || '').slice(0, 120), at: Date.now() };
-  const go = () => drawLock(priorLock);
-  if (D.body) go(); else D.addEventListener('DOMContentLoaded', go);
-  await new Promise(() => {});          // top-level await: o app.js (que importa este arquivo) nunca começa
-}
+function runScans() { scanGlobals(); scanDom(); scanNatives(); scanDrift(); scanWatched(); scanDevtools(); }
 armClock();
 scanGlobals(); scanDom(); observeDom();
 checkModuleUrl(import.meta.url);
 D.addEventListener('DOMContentLoaded', () => { scanDom(); scanGlobals(); });
-W.addEventListener('load', () => setTimeout(runScans, 400));
-setInterval(runScans, 2000);
-
-// se o app.js nunca registrar os tripwires, é sinal de que removeram a chamada
+W.addEventListener('load', () => setTimeout(runScans, 200));
+W.addEventListener('resize', () => { lastDev = 0; scanDevtools(); });
+setInterval(runScans, 400);
 setTimeout(() => { if (!S.watched) flag('no-watch', 2); }, 9000);
 
 // ---------------------------------------------------------------- API pública
 export const SR = {
-  /** true quando a corrida/ranking deve ser bloqueado */
   get blocked() { return S.blocked; },
   get locked() { return S.locked; },
-  onLock(fn) { if (typeof fn === 'function') { S.lockListeners.push(fn); if (S.locked) { try { fn(Object.keys(S.codes)); } catch (_) {} } } },
+  get owner() { return S.owner; },
+  get banId() { return S.banId; },
   get score() { return S.score; },
   codes() { return Object.keys(S.codes); },
-  flag, watch, tick, checkModuleUrl,
+  flag, watch, tick, checkModuleUrl, fingerprint,
   now: NATIVE_NOW,
+  /** usado quando o SERVIDOR diz que este aparelho/conta já está banido */
+  forceLock(reason) { if (S.owner) return; S.codes[reason || 'server-ban'] = { w: 9, d: '', at: Date.now() }; S.score = 99; S.strong++; S.blocked = true; lockout(); },
   onBlock(fn) { if (typeof fn === 'function') { S.listeners.push(fn); if (S.blocked) { try { fn(Object.keys(S.codes)); } catch (_) {} } } },
-  /** entrega (e zera) o relatório pendente — o firebase-dual grava em flags/{uid} */
+  onLock(fn) { if (typeof fn === 'function') { S.lockListeners.push(fn); if (S.locked) { try { fn(Object.keys(S.codes)); } catch (_) {} } } },
   takeReport() { const p = S.pending; S.pending = null; return p; },
   peekReport() { return S.pending; }
 };
-// versão "janela" só para o firebase-dual quando carregado por <script>; sem expor funções de bypass
 try { Object.defineProperty(W, '__SR_SHIELD_ON', { value: true, writable: false, configurable: false, enumerable: false }); } catch (_) {}

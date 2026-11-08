@@ -221,12 +221,25 @@ service cloud.firestore {
       // Banimento automático pelo shield: a conta só consegue banir A SI MESMA, uma vez; só o admin desfaz.
       allow create: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['ownerUid', 'reason', 'codes', 'at', 'auto'])
+        && request.resource.data.keys().hasOnly(['ownerUid', 'reason', 'codes', 'at', 'auto', 'code'])
         && request.resource.data.ownerUid == uid
         && request.resource.data.auto == true
         && request.resource.data.reason == 'cheat-automatico'
         && request.resource.data.codes is list
         && request.resource.data.codes.size() <= 20;
+    }
+
+    // Banimento por IMPRESSÃO DIGITAL do aparelho (vale mesmo com outra conta ou VPN).
+    // Qualquer um pode CONSULTAR o próprio aparelho; só conta logada cria; só o admin edita/apaga/lista.
+    match /deviceBans/{fp} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if request.auth != null
+        && fp.size() == 32
+        && request.resource.data.keys().hasOnly(['reason', 'uid', 'at', 'code'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.reason == 'cheat-automatico';
+      allow update, delete: if isAdmin();
     }
 
     match /admins/{d} {

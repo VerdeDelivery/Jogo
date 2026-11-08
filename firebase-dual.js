@@ -3,7 +3,7 @@
 //   bans/{uid}     -> contas bloqueadas                                 live/{meta,verified} -> skins, avatares, banners, verificados
 // (nome do arquivo mantido por compatibilidade com o app.js)
 import { CFG, CFG2, FB_BASE as G, lcOf, periodNow, WK } from './common.js';
-import { SR } from './shield.js?v=1';
+import { SR } from './shield.js?v=2';
 let H = null;
 async function init() {
   if (H) return H;
@@ -54,8 +54,21 @@ let banSent = false;
 async function sendBan(h, u) { // banimento automático da conta (shield detectou cheat inequívoco)
   if (banSent || !u || !SR.locked) return;
   const { Fs, db } = h;
-  try { await Fs.setDoc(Fs.doc(db, 'bans', u.uid), { ownerUid:u.uid, reason:'cheat-automatico', codes:SR.codes().slice(0, 20), at:Fs.serverTimestamp(), auto:true }); banSent = true; }
+  const bid = SR.banId || '';
+  try { await Fs.setDoc(Fs.doc(db, 'bans', u.uid), { ownerUid:u.uid, reason:'cheat-automatico', codes:SR.codes().slice(0, 20), at:Fs.serverTimestamp(), auto:true, code:bid }); banSent = true; }
   catch (e) { console.warn('ban:', code(e)); }
+  try { const fp = await SR.fingerprint(); if (fp) await Fs.setDoc(Fs.doc(db, 'deviceBans', fp), { reason:'cheat-automatico', uid:u.uid, at:Fs.serverTimestamp(), code:bid }); }
+  catch (e) { console.warn('deviceBan:', code(e)); }
+}
+// o servidor sabe que este aparelho (impressão digital) já foi banido? Vale mesmo com outra conta/VPN.
+let devCheckAt = 0;
+async function checkDeviceBan(h) {
+  if (SR.locked || SR.owner || Date.now() - devCheckAt < 30000) return; devCheckAt = Date.now();
+  try {
+    const fp = await SR.fingerprint(); if (!fp) return;
+    const s = await h.Fs.getDoc(h.Fs.doc(h.db, 'deviceBans', fp));
+    if (s.exists()) SR.forceLock('server-device-ban');
+  } catch (_) {}
 }
 async function sendFlag(h, u) {
   if (SR.locked) sendBan(h, u);
@@ -117,6 +130,7 @@ async function isBanned(h, uid) { try { return (await h.Fs.getDoc(h.Fs.doc(h.db,
 export async function fbApi(path, method, body) {
   try {
     const h = await init(), { Au, Fs, auth, db } = h, b = body || {};
+    checkDeviceBan(h);
     if (path === '/api/auth/register') {
       const name = String(b.username || '').trim().replace(/\s+/g, ' '), pw = String(b.password || '');
       if (!NAME_RE.test(name)) return err(400, 'Nome de usuário: de 3 a 14 caracteres (letras, números, espaço, _ . -).');

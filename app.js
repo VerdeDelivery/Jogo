@@ -1,4 +1,4 @@
-import { SR } from './shield.js?v=1';
+import { SR } from './shield.js?v=2';
 import { LocalDB } from './database.js';
 import { fbApi } from './firebase-dual.js';
 import { periodNow, fmtDateTime } from './common.js';
