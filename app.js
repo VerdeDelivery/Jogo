@@ -1,6 +1,6 @@
 import { SR } from './shield.js?v=2';
 import { LocalDB } from './database.js';
-import { fbApi } from './firebase-dual.js?v=15';
+import { fbApi } from './firebase-dual.js?v=16';
 import { periodNow, fmtDateTime } from './common.js';
 import { joinFsRoom } from './multiplayer.js';
 SR.checkModuleUrl(import.meta.url);
@@ -416,10 +416,13 @@ function drawAccount() {
     if (h) { ACC.salt = salt; ACC.h = h; }
     saveAcc(); save(); patchGR(); accDraft = null; accEdit = false; acctSync(); screen('title');
   };
-  let saving = false; // trava toque duplo: antes, o 2º toque tentava criar a mesma conta e dava "já está em uso"
-  $('#aSave').onclick = async () => { if (saving) return; saving = true; const bt = $('#aSave'), t0 = bt.textContent; bt.disabled = true; bt.textContent = 'AGUARDE…';
-    try { await saveGo(); } catch (e) { console.warn(e); setMsg('#aMsg', 'Algo deu errado. Toque de novo.', 0); }
-    finally { saving = false; if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = t0; } } };
+  let saving = false; // trava toque duplo e mostra o andamento
+  $('#aSave').onclick = async () => { if (saving) return; saving = true; const bt = $('#aSave'), t0 = bt.textContent, txt = accEdit ? 'Salvando…' : 'Criando sua conta…';
+    bt.disabled = true; bt.textContent = accEdit ? 'SALVANDO…' : 'CRIANDO CONTA…'; setMsg('#aMsg', txt + ' só um instante.', 1);
+    const slowT = setTimeout(() => { if (saving) setMsg('#aMsg', 'Ainda ' + txt.toLowerCase().replace('…', '') + '… a internet pode estar lenta. Não feche a tela.', 1); }, 7000);
+    try { await Promise.race([saveGo(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))]); }
+    catch (e) { console.warn(e); setMsg('#aMsg', e.message === 'timeout' ? 'Demorou demais. Confira a internet e toque de novo (se a conta já foi criada, você entra direto).' : 'Algo deu errado. Toque de novo.', 0); }
+    finally { clearTimeout(slowT); saving = false; if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = t0; } } };
   if ($('#aCancel')) $('#aCancel').onclick = () => { accDraft = null; accEdit = false; screen('title'); };
   if ($('#aOut')) $('#aOut').onclick = async () => {
     if (ACC && ACC.online) { await api('/api/auth/logout', 'POST'); setToken(''); }
@@ -434,7 +437,7 @@ function drawLogin() {
     + `<label>Nome de usuário<input type="text" id="lName" maxlength="14" autocomplete="username" autocapitalize="off" spellcheck="false" value="${esc(loginName)}"></label>`
     + `<label>Senha<input type="password" id="lPw" autocomplete="current-password" maxlength="40"></label>`
     + `<div class="msg" id="lMsg"></div><button class="btn" id="lGo" type="button">ENTRAR</button><button class="btn b" id="lGoogle" type="button">ENTRAR COM O GOOGLE</button><button class="btn g" id="lNew" type="button">CRIAR NOVA CONTA</button><button class="btn g" id="lBack" type="button">VOLTAR</button>`;
-  const go = async () => {
+  const goRun = async () => {
     const name = $('#lName').value.trim().replace(/\s+/g, ' '); loginName = name; const pw = $('#lPw').value;
     if (!name || !pw) return setMsg('#lMsg', 'Digite o usuário e a senha.', 0);
     const r = await api('/api/auth/login', 'POST', { username:name, password:pw });
@@ -452,6 +455,11 @@ function drawLogin() {
     }
     screen('title');
   };
+  let busy = false;
+  const go = async () => { if (busy) return; busy = true; const bt = $('#lGo'), t0 = bt.textContent; bt.disabled = true; bt.textContent = 'ENTRANDO…'; setMsg('#lMsg', 'Entrando na sua conta… só um instante.', 1);
+    try { await Promise.race([goRun(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 30000))]); }
+    catch (e) { console.warn(e); setMsg('#lMsg', e.message === 'timeout' ? 'Demorou demais. Confira a internet e toque de novo.' : 'Algo deu errado. Toque de novo.', 0); }
+    finally { busy = false; if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = t0; } } };
   $('#lGoogle').onclick = () => googleFlow('#lMsg');
   $('#lGo').onclick = go; $('#lNew').onclick = () => { accDraft = null; accEdit = false; screen('account'); };
   $('#lBack').onclick = () => screen('title');

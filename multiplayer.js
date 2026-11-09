@@ -1,6 +1,6 @@
 // Multijogador próprio (sem WebSim): salas, convites e corrida em tempo real usando o Firestore do jogo.
 // Imita o protocolo de mensagens do servidor antigo, então a tela do jogo continua igual.
-import { fbInit } from './firebase-dual.js?v=15';
+import { fbInit } from './firebase-dual.js?v=16';
 
 const ONLINE_MS = 100000, ROOM_ALIVE_MS = 120000, BEAT_MS = 30000, POLL_MS = 6000, MAX_PLAYERS = 12, COUNTDOWN_MS = 5000;
 const CH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

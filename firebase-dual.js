@@ -148,6 +148,8 @@ export async function fbApi(path, method, body) {
         return err(400, 'Não foi possível criar a conta (' + code(e) + ').');
       }
       const p = { name, avatar:String(b.avatar ?? '0'), banner:String(b.banner || ''), photo:cleanPhoto(b.photo) };
+      cacheSet(cred.user.uid, p);
+      const slow = (async () => { // perfil/ranking gravam em segundo plano (o login recria se faltar algo)
       try { await Au.updateProfile(cred.user, { displayName:name }); } catch (_) {}
       try { await Fs.setDoc(Fs.doc(db, 'profiles', cred.user.uid), { ...p, provider:'local', updatedAt:Fs.serverTimestamp() }); } catch (e) { console.warn('perfil:', code(e)); }
       // Conta do jogo antigo (só existia no aparelho): leva o recorde junto — o do aparelho e o do ranking/{uid} antigo, se o nome bater.
@@ -158,8 +160,9 @@ export async function fbApi(path, method, body) {
       }
       if (!(t0 >= 0 && t0 < 86400)) t0 = 0; if (!(s0 >= 0 && s0 <= 1e8)) s0 = 0;
       try { await Fs.setDoc(Fs.doc(db, 'ranking', cred.user.uid), { name:name.slice(0, 14), avatar:p.avatar, banner:p.banner, photo:p.photo, t:t0, s:s0, wk:0, wt:0, wkt:0, ...(from ? { migratedFrom:from } : {}), u:Fs.serverTimestamp() }); } catch (e) { console.warn('ranking:', code(e)); } // a conta já aparece no painel
-      cacheSet(cred.user.uid, p);
-      await signDb2(h, lcOf(name), pw, name, true);
+      })();
+      const b2 = signDb2(h, lcOf(name), pw, name, true);
+      await Promise.race([Promise.allSettled([slow, b2]), new Promise(r => setTimeout(r, 3000))]); // nunca prende a tela por mais de 3 s
       return out(201, { ok:true, token:'fb', account:pub(cred.user.uid, p) });
     }
     if (path === '/api/auth/login') {
@@ -172,17 +175,19 @@ export async function fbApi(path, method, body) {
         if (e.code === 'auth/network-request-failed') return { down:true };
         return err(401, 'Usuário ou senha incorretos.');
       }
-      if (await isBanned(h, cred.user.uid)) { await Au.signOut(auth); return err(403, 'Esta conta foi bloqueada neste jogo.'); }
       let p = cacheGet(cred.user.uid), pr = null, rk = null;
-      try { pr = (await Fs.getDoc(Fs.doc(db, 'profiles', cred.user.uid))).data() || null; } catch (_) {}
-      try { rk = (await Fs.getDoc(Fs.doc(db, 'ranking', cred.user.uid))).data() || null; } catch (_) {}
+      const [banido] = await Promise.all([isBanned(h, cred.user.uid),
+        Fs.getDoc(Fs.doc(db, 'profiles', cred.user.uid)).then(x => { pr = x.data() || null; }).catch(() => {}),
+        Fs.getDoc(Fs.doc(db, 'ranking', cred.user.uid)).then(x => { rk = x.data() || null; }).catch(() => {})]);
+      if (banido) { await Au.signOut(auth); return err(403, 'Esta conta foi bloqueada neste jogo.'); }
       const src = pr || rk; if (src) p = { avatar:src.avatar, banner:src.banner, photo:src.photo }; // foto e banner que a conta já tinha
       p.name = cred.user.displayName || String(b.username).trim(); cacheSet(cred.user.uid, p);
       const nm = p.name.slice(0, 14), av = String(p.avatar ?? '0'), bn = p.banner || '', ph = cleanPhoto(p.photo);
-      if (!pr) { try { await Fs.setDoc(Fs.doc(db, 'profiles', cred.user.uid), { name:p.name.slice(0, 50), avatar:av, banner:bn, photo:ph, provider:'local', updatedAt:Fs.serverTimestamp() }); } catch (e) { console.warn('perfil:', code(e)); } }
-      if (!rk) { try { await Fs.setDoc(Fs.doc(db, 'ranking', cred.user.uid), { name:nm, avatar:av, banner:bn, photo:ph, t:0, s:0, wk:0, wt:0, wkt:0, u:Fs.serverTimestamp() }); } catch (e) { console.warn('ranking:', code(e)); } }
-      await signDb2(h, lc, pw, p.name, true);
-      await syncLegacy(h, cred.user, p.name);
+      const W = [];
+      if (!pr) { W.push(Fs.setDoc(Fs.doc(db, 'profiles', cred.user.uid), { name:p.name.slice(0, 50), avatar:av, banner:bn, photo:ph, provider:'local', updatedAt:Fs.serverTimestamp() }).catch(e => console.warn('perfil:', code(e)))); }
+      if (!rk) { W.push(Fs.setDoc(Fs.doc(db, 'ranking', cred.user.uid), { name:nm, avatar:av, banner:bn, photo:ph, t:0, s:0, wk:0, wt:0, wkt:0, u:Fs.serverTimestamp() }).catch(e => console.warn('ranking:', code(e)))); }
+      W.push(signDb2(h, lc, pw, p.name, true), syncLegacy(h, cred.user, p.name));
+      await Promise.race([Promise.allSettled(W), new Promise(r => setTimeout(r, 3000))]); // nunca prende a tela por mais de 3 s
       return out(200, { ok:true, token:'fb', account:pub(cred.user.uid, p) });
     }
 
